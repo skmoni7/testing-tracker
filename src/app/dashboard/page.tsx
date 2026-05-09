@@ -3,7 +3,7 @@
 // Orders sorted by priority: most urgent on top, Done at bottom
 // Full row color highlight based on status
 // PC: horizontal table | Mobile: card layout
-// Navbar: 3 summary boxes (Total / Received / Pending)
+// Navbar: 4 summary boxes (Total / Comm / Received / Pending)
 // ======================================================
 'use client';
 import { useState, useEffect } from 'react';
@@ -48,9 +48,12 @@ function getRowBg(order: Order): string {
 
 // ----- Card border color for mobile -----
 function getCardBorder(order: Order): string {
-  if (order.paymentReceived) return 'border-l-4 border-green-500 bg-green-100 dark:bg-green-900';
-  if (order.delivered && order.reviewWritten) return 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/40';
-  if (order.delivered) return 'border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/30';
+  if (order.paymentReceived)
+    return 'border-l-4 border-green-500 bg-green-100 dark:bg-green-900';
+  if (order.delivered && order.reviewWritten)
+    return 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/40';
+  if (order.delivered)
+    return 'border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/30';
   return 'border-l-4 border-red-500 bg-red-50 dark:bg-red-900/30';
 }
 
@@ -106,11 +109,16 @@ export default function DashboardPage() {
   }, [user]);
 
   // ----- Summary calculations -----
-  const totalAmount = orders.reduce((sum, o) => sum + (o.price || 0) + (o.commissionAmount || 0), 0);
+  // Total = sum of product prices only (no commission)
+  const totalAmount = orders.reduce((sum, o) => sum + (o.price || 0), 0);
+  // Comm = sum of commission amounts only
+  const commAmount = orders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+  // Received = total paid (product + commission)
   const receivedAmount = orders
     .filter(o => o.paymentReceived)
     .reduce((sum, o) => sum + (o.price || 0) + (o.commissionAmount || 0), 0);
-  const pendingAmount = totalAmount - receivedAmount;
+  // Pending = everything not yet paid
+  const pendingAmount = (totalAmount + commAmount) - receivedAmount;
 
   // ----- Toggle boolean field + record timestamp -----
   const toggleField = async (
@@ -119,8 +127,11 @@ export default function DashboardPage() {
     current: boolean
   ) => {
     const tsField =
-      field === 'delivered' ? 'deliveredAt' :
-      field === 'reviewWritten' ? 'reviewWrittenAt' : 'paymentReceivedAt';
+      field === 'delivered'
+        ? 'deliveredAt'
+        : field === 'reviewWritten'
+        ? 'reviewWrittenAt'
+        : 'paymentReceivedAt';
     await updateDoc(doc(db, 'orders', orderId), {
       [field]: !current,
       [tsField]: !current ? Timestamp.now() : null,
@@ -137,68 +148,88 @@ export default function DashboardPage() {
   const fmtTs = (ts: Timestamp | null) => {
     if (!ts) return '';
     const d = ts.toDate();
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-      ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return (
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+      ' ' +
+      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
       {/* ----- Navbar ----- */}
-      <nav className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-900 shadow">
+      <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2 flex items-center justify-between gap-2">
 
         {/* Left: Logo */}
-        <span className="text-lg font-bold text-indigo-600 shrink-0">ProTrack</span>
+        <span className="text-indigo-600 font-bold text-lg whitespace-nowrap">ProTrack</span>
 
-        {/* Center: 3 Summary Boxes */}
+        {/* Center: 4 Summary Boxes */}
         {!loading && (
-          <div className="flex items-center gap-2 mx-4">
+          <div className="flex items-center gap-2">
 
-            {/* Total box */}
-            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 min-w-[70px]">
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-indigo-400 dark:text-indigo-300">Total</span>
-              <span className="text-sm font-bold text-indigo-700 dark:text-indigo-200">${totalAmount.toFixed(2)}</span>
+            {/* Total box - product $ only */}
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg border border-blue-400 bg-blue-600 text-white min-w-[72px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Total</span>
+              <span className="text-sm font-bold">${totalAmount.toFixed(2)}</span>
+            </div>
+
+            {/* Comm box - commission only */}
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg border border-purple-400 bg-purple-600 text-white min-w-[72px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Comm</span>
+              <span className="text-sm font-bold">${commAmount.toFixed(2)}</span>
             </div>
 
             {/* Received box */}
-            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 min-w-[70px]">
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-green-500 dark:text-green-300">Received</span>
-              <span className="text-sm font-bold text-green-700 dark:text-green-200">${receivedAmount.toFixed(2)}</span>
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg border border-green-400 bg-green-600 text-white min-w-[72px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Received</span>
+              <span className="text-sm font-bold">${receivedAmount.toFixed(2)}</span>
             </div>
 
             {/* Pending box */}
-            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 min-w-[70px]">
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-red-400 dark:text-red-300">Pending</span>
-              <span className="text-sm font-bold text-red-600 dark:text-red-200">${pendingAmount.toFixed(2)}</span>
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg border border-red-400 bg-red-600 text-white min-w-[72px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Pending</span>
+              <span className="text-sm font-bold">${pendingAmount.toFixed(2)}</span>
             </div>
 
           </div>
         )}
 
         {/* Right: Controls */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button onClick={() => setDark(!dark)} className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDark(!dark)}
+            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
             {dark ? 'Light' : 'Dark'}
           </button>
-          <button onClick={() => router.push('/add')} className="bg-indigo-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
+          <button
+            onClick={() => router.push('/add')}
+            className="bg-indigo-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition"
+          >
             + Add
           </button>
-          <button onClick={logout} className="text-red-500 text-sm hover:underline">Logout</button>
+          <button
+            onClick={logout}
+            className="text-red-500 hover:underline text-sm"
+          >
+            Logout
+          </button>
         </div>
-
       </nav>
 
-      {loading && <div className="flex justify-center items-center h-64 text-gray-400">Loading...</div>}
+      {loading && <p className="text-center mt-10 text-gray-500">Loading...</p>}
+
       {!loading && orders.length === 0 && (
-        <div className="flex justify-center items-center h-64 text-gray-400">No records yet. Click + Add to start.</div>
+        <p className="text-center mt-10 text-gray-500">No records yet. Click + Add to start.</p>
       )}
 
       {/* ===== PC TABLE (md and up) ===== */}
       {!loading && orders.length > 0 && (
-        <div className="hidden md:block overflow-x-auto mt-2">
-          <table className="w-full text-sm border-collapse">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <tr className="bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase">
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2 text-left">Product</th>
                 <th className="px-3 py-2 text-left">Market</th>
@@ -209,7 +240,7 @@ export default function DashboardPage() {
                 <th className="px-3 py-2 text-center">Delivered</th>
                 <th className="px-3 py-2 text-center">Review</th>
                 <th className="px-3 py-2 text-center">Paid</th>
-                <th className="px-3 py-2 text-left">Actions</th>
+                <th className="px-3 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -217,11 +248,11 @@ export default function DashboardPage() {
                 const commission = order.commissionAmount || 0;
                 const total = order.price + commission;
                 return (
-                  <tr key={order.id} className={`${getRowBg(order)} border-b border-gray-200 dark:border-gray-700`}>
+                  <tr key={order.id} className={`border-b border-gray-200 dark:border-gray-700 ${getRowBg(order)}`}>
 
                     {/* Status badge */}
                     <td className="px-3 py-2">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadge(order)}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getBadge(order)}`}>
                         {getLabel(order)}
                       </span>
                     </td>
@@ -229,7 +260,7 @@ export default function DashboardPage() {
                     {/* Product name + order number tiny below */}
                     <td className="px-3 py-2">
                       <div className="font-medium">{order.productName}</div>
-                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{order.orderNumber}</div>
+                      <div className="text-[10px] text-gray-400">{order.orderNumber}</div>
                     </td>
 
                     {/* Marketplace */}
@@ -237,8 +268,8 @@ export default function DashboardPage() {
 
                     {/* Seller + review type tiny below */}
                     <td className="px-3 py-2">
-                      <div>{order.sellerName || '—'}</div>
-                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                      <div>{order.sellerName || '\u2014'}</div>
+                      <div className="text-[10px] text-gray-400">
                         {order.reviewType === 'text+pic' ? 'Txt+Pic' : 'Text'}
                       </div>
                     </td>
@@ -250,7 +281,7 @@ export default function DashboardPage() {
                     <td className="px-3 py-2 text-right">
                       <div>${order.price.toFixed(2)}</div>
                       {commission > 0 && (
-                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">+${commission.toFixed(2)} comm</div>
+                        <div className="text-[10px] text-gray-400">+${commission.toFixed(2)} comm</div>
                       )}
                     </td>
 
@@ -260,40 +291,59 @@ export default function DashboardPage() {
                     {/* Delivered */}
                     <td className="px-3 py-2 text-center">
                       <div className="flex flex-col items-center gap-0.5">
-                        <input type="checkbox" checked={order.delivered}
+                        <input
+                          type="checkbox"
+                          checked={order.delivered}
                           onChange={() => toggleField(order.id, 'delivered', order.delivered)}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
-                        {order.deliveredAt && <span className="text-[9px] text-gray-400">{fmtTs(order.deliveredAt)}</span>}
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                        />
+                        {order.deliveredAt && (
+                          <span className="text-[9px] text-gray-400">{fmtTs(order.deliveredAt)}</span>
+                        )}
                       </div>
                     </td>
 
                     {/* Review written */}
                     <td className="px-3 py-2 text-center">
                       <div className="flex flex-col items-center gap-0.5">
-                        <input type="checkbox" checked={order.reviewWritten}
+                        <input
+                          type="checkbox"
+                          checked={order.reviewWritten}
                           onChange={() => toggleField(order.id, 'reviewWritten', order.reviewWritten)}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
-                        {order.reviewWrittenAt && <span className="text-[9px] text-gray-400">{fmtTs(order.reviewWrittenAt)}</span>}
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                        />
+                        {order.reviewWrittenAt && (
+                          <span className="text-[9px] text-gray-400">{fmtTs(order.reviewWrittenAt)}</span>
+                        )}
                       </div>
                     </td>
 
                     {/* Payment received */}
                     <td className="px-3 py-2 text-center">
                       <div className="flex flex-col items-center gap-0.5">
-                        <input type="checkbox" checked={order.paymentReceived}
+                        <input
+                          type="checkbox"
+                          checked={order.paymentReceived}
                           onChange={() => toggleField(order.id, 'paymentReceived', order.paymentReceived)}
-                          className="w-4 h-4 accent-green-600 cursor-pointer" />
-                        {order.paymentReceivedAt && <span className="text-[9px] text-gray-400">{fmtTs(order.paymentReceivedAt)}</span>}
+                          className="w-4 h-4 accent-green-600 cursor-pointer"
+                        />
+                        {order.paymentReceivedAt && (
+                          <span className="text-[9px] text-gray-400">{fmtTs(order.paymentReceivedAt)}</span>
+                        )}
                       </div>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-3 py-2">
-                      <div className="flex gap-3">
-                        <button onClick={() => router.push(`/edit/${order.id}`)}
-                          className="text-indigo-600 hover:underline text-xs font-medium">Edit</button>
-                        <button onClick={() => deleteOrder(order.id)}
-                          className="text-red-500 hover:underline text-xs">Del</button>
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex gap-3 mt-2">
+                        <button
+                          onClick={() => router.push(`/edit/${order.id}`)}
+                          className="text-indigo-600 hover:underline text-sm font-medium"
+                        >Edit</button>
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          className="text-red-500 hover:underline text-sm"
+                        >Del</button>
                       </div>
                     </td>
 
@@ -312,33 +362,34 @@ export default function DashboardPage() {
             const commission = order.commissionAmount || 0;
             const total = order.price + commission;
             return (
-              <div key={order.id} className={`rounded-lg p-3 shadow ${getCardBorder(order)}`}>
+              <div key={order.id} className={`rounded-xl p-3 shadow-sm ${getCardBorder(order)}`}>
 
                 {/* Top row */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold text-sm">{order.productName}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{order.orderNumber}</div>
+                    <div className="text-[10px] text-gray-400">{order.orderNumber}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{order.marketplace}</div>
                     {order.sellerName && (
-                      <div className="text-[10px] text-gray-400">{order.sellerName}</div>
+                      <div className="text-xs text-gray-500">{order.sellerName}</div>
                     )}
                   </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getBadge(order)}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadge(order)}`}>
                     {getLabel(order)}
                   </span>
                 </div>
 
                 {/* Amount row */}
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="font-bold text-base">${total.toFixed(2)}</span>
-                  <span className="text-[10px] text-gray-400">Prod: ${order.price.toFixed(2)}</span>
-                  {commission > 0 && <span className="text-[10px] text-gray-400">Comm: ${commission.toFixed(2)}</span>}
+                <div className="mt-2 text-sm">
+                  <span className="font-bold">${total.toFixed(2)}</span>
+                  &nbsp;&nbsp;
+                  <span className="text-xs text-gray-500">Prod: ${order.price.toFixed(2)}</span>
+                  {commission > 0 && <span className="text-xs text-gray-400"> &nbsp;Comm: ${commission.toFixed(2)}</span>}
                 </div>
 
                 {/* Review type + PayPal */}
-                <div className="text-[10px] text-gray-400 mt-1">
-                  {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} · {order.paypalAccount}
+                <div className="text-xs text-gray-400 mt-1">
+                  {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} &middot; {order.paypalAccount}
                 </div>
 
                 {/* Checkboxes */}
@@ -348,9 +399,12 @@ export default function DashboardPage() {
                     const ts = field === 'delivered' ? order.deliveredAt : field === 'reviewWritten' ? order.reviewWrittenAt : order.paymentReceivedAt;
                     return (
                       <div key={field} className="flex flex-col items-center gap-0.5">
-                        <input type="checkbox" checked={order[field]}
+                        <input
+                          type="checkbox"
+                          checked={order[field]}
                           onChange={() => toggleField(order.id, field, order[field])}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                        />
                         <span className="text-[10px] text-gray-500">{label}</span>
                         {ts && <span className="text-[9px] text-gray-400">{fmtTs(ts)}</span>}
                       </div>
@@ -360,10 +414,14 @@ export default function DashboardPage() {
 
                 {/* Actions */}
                 <div className="flex gap-3 mt-2">
-                  <button onClick={() => router.push(`/edit/${order.id}`)}
-                    className="text-indigo-600 hover:underline text-sm font-medium">Edit</button>
-                  <button onClick={() => deleteOrder(order.id)}
-                    className="text-red-500 hover:underline text-sm">Delete</button>
+                  <button
+                    onClick={() => router.push(`/edit/${order.id}`)}
+                    className="text-indigo-600 hover:underline text-sm font-medium"
+                  >Edit</button>
+                  <button
+                    onClick={() => deleteOrder(order.id)}
+                    className="text-red-500 hover:underline text-sm"
+                  >Delete</button>
                 </div>
 
               </div>

@@ -16,3 +16,5 @@ A Next.js web app for tracking free product testing orders with Firebase backend
 
 ## Deploy
 Connected to Vercel — push to `main` auto-deploys to production.
+
+ 

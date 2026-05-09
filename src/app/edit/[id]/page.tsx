@@ -1,7 +1,7 @@
 // ======================================================
 // EDIT ORDER PAGE
 // Edit an existing order — includes seller name + commission
-// FIX: ensures saved seller/marketplace always shows in dropdown
+// FIX: pre-fills all fields; handles missing sellers/marketplaces collections
 // ======================================================
 'use client';
 import { useState, useEffect } from 'react';
@@ -15,8 +15,6 @@ import {
   collection,
   addDoc,
   getDocs,
-  query,
-  orderBy,
 } from 'firebase/firestore';
 
 // ----- Default marketplace list -----
@@ -54,52 +52,59 @@ export default function EditPage() {
     if (!user || !id) return;
     const load = async () => {
       try {
-        // ----- Step 1: Load saved marketplaces -----
-        const mpSnap = await getDocs(query(collection(db, 'marketplaces'), orderBy('name')));
-        const savedMp = mpSnap.docs.map(d => d.data().name as string);
-        let mergedMp = Array.from(new Set([...DEFAULT_MARKETPLACES, ...savedMp]));
+        // ----- Step 1: Load saved marketplaces (no orderBy to avoid index requirement) -----
+        let mergedMp = [...DEFAULT_MARKETPLACES];
+        try {
+          const mpSnap = await getDocs(collection(db, 'marketplaces'));
+          const savedMp = mpSnap.docs.map(d => d.data().name as string);
+          mergedMp = Array.from(new Set([...DEFAULT_MARKETPLACES, ...savedMp]));
+        } catch (_) { /* marketplaces collection may not exist yet */ }
 
-        // ----- Step 2: Load saved sellers -----
-        const sellerSnap = await getDocs(query(collection(db, 'sellers'), orderBy('name')));
-        let savedSellers = sellerSnap.docs.map(d => d.data().name as string);
+        // ----- Step 2: Load saved sellers (no orderBy to avoid index requirement) -----
+        let savedSellers: string[] = [];
+        try {
+          const sellerSnap = await getDocs(collection(db, 'sellers'));
+          savedSellers = sellerSnap.docs.map(d => d.data().name as string);
+        } catch (_) { /* sellers collection may not exist yet */ }
 
         // ----- Step 3: Load existing order doc -----
         const snap = await getDoc(doc(db, 'orders', id));
         if (snap.exists()) {
           const d = snap.data();
 
-          // If saved marketplace not in list, add it so dropdown shows it
+          // If saved marketplace not in list, add it so dropdown can show it
           const savedMpVal = d.marketplace || 'Amazon';
           if (savedMpVal && !mergedMp.includes(savedMpVal)) {
             mergedMp = [...mergedMp, savedMpVal];
           }
 
-          // If saved seller not in list, add it so dropdown shows it
+          // If saved seller not in list, add it so dropdown can show it
           const savedSeller = d.sellerName || '';
           if (savedSeller && !savedSellers.includes(savedSeller)) {
             savedSellers = [...savedSellers, savedSeller];
           }
 
-          // Now update all dropdown lists before setting values
+          // Set dropdown options before setting selected values
           setMarketplaces(mergedMp);
           setSellers(savedSellers);
 
-          // Populate all form fields from Firestore data
+          // Populate all form fields from saved Firestore data
           setProductName(d.productName || '');
           setOrderNumber(d.orderNumber || '');
           setMarketplace(savedMpVal);
           setSellerName(savedSeller);
-          setPrice(String(d.price ?? ''));
-          setCommissionAmount(String(d.commissionAmount ?? ''));
+          setPrice(d.price !== undefined ? String(d.price) : '');
+          setCommissionAmount(d.commissionAmount ? String(d.commissionAmount) : '');
           setReviewType(d.reviewType || 'text');
           setPaypalAccount(d.paypalAccount || 'Shanu PP');
         } else {
           setMarketplaces(mergedMp);
           setSellers(savedSellers);
+          setError('Order not found.');
         }
       } catch (e) {
-        console.error(e);
-        setError('Failed to load order.');
+        console.error('Edit load error:', e);
+        setError('Failed to load order. Please go back and try again.');
       } finally {
         setLoading(false);
       }
@@ -138,7 +143,7 @@ export default function EditPage() {
         await addDoc(collection(db, 'sellers'), { name: finalSeller });
       }
 
-      // Update the order
+      // Update the order document
       await updateDoc(doc(db, 'orders', id), {
         productName: productName.trim(),
         orderNumber: orderNumber.trim(),

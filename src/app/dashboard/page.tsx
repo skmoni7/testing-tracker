@@ -3,6 +3,7 @@
 // Orders sorted by priority: most urgent on top, Done at bottom
 // Full row color highlight based on status
 // PC: horizontal table | Mobile: card layout
+// Navbar: 3 summary boxes (Total / Received / Pending)
 // ======================================================
 'use client';
 import { useState, useEffect } from 'react';
@@ -104,6 +105,13 @@ export default function DashboardPage() {
     return () => unsub();
   }, [user]);
 
+  // ----- Summary calculations -----
+  const totalAmount = orders.reduce((sum, o) => sum + (o.price || 0) + (o.commissionAmount || 0), 0);
+  const receivedAmount = orders
+    .filter(o => o.paymentReceived)
+    .reduce((sum, o) => sum + (o.price || 0) + (o.commissionAmount || 0), 0);
+  const pendingAmount = totalAmount - receivedAmount;
+
   // ----- Toggle boolean field + record timestamp -----
   const toggleField = async (
     orderId: string,
@@ -137,9 +145,38 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
       {/* ----- Navbar ----- */}
-      <nav className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 shadow">
-        <span className="text-lg font-bold text-indigo-600">ProTrack</span>
-        <div className="flex items-center gap-3">
+      <nav className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-900 shadow">
+
+        {/* Left: Logo */}
+        <span className="text-lg font-bold text-indigo-600 shrink-0">ProTrack</span>
+
+        {/* Center: 3 Summary Boxes */}
+        {!loading && (
+          <div className="flex items-center gap-2 mx-4">
+
+            {/* Total box */}
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 min-w-[70px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-indigo-400 dark:text-indigo-300">Total</span>
+              <span className="text-sm font-bold text-indigo-700 dark:text-indigo-200">${totalAmount.toFixed(2)}</span>
+            </div>
+
+            {/* Received box */}
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 min-w-[70px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-green-500 dark:text-green-300">Received</span>
+              <span className="text-sm font-bold text-green-700 dark:text-green-200">${receivedAmount.toFixed(2)}</span>
+            </div>
+
+            {/* Pending box */}
+            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 min-w-[70px]">
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-red-400 dark:text-red-300">Pending</span>
+              <span className="text-sm font-bold text-red-600 dark:text-red-200">${pendingAmount.toFixed(2)}</span>
+            </div>
+
+          </div>
+        )}
+
+        {/* Right: Controls */}
+        <div className="flex items-center gap-3 shrink-0">
           <button onClick={() => setDark(!dark)} className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
             {dark ? 'Light' : 'Dark'}
           </button>
@@ -148,6 +185,7 @@ export default function DashboardPage() {
           </button>
           <button onClick={logout} className="text-red-500 text-sm hover:underline">Logout</button>
         </div>
+
       </nav>
 
       {loading && <div className="flex justify-center items-center h-64 text-gray-400">Loading...</div>}

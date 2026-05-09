@@ -24,9 +24,9 @@ import { useRouter } from 'next/navigation';
 
 // ----- Priority score: lower = more urgent (sorted ascending) -----
 // 0 = not delivered, no review, no payment  (RED - top)
-// 1 = delivered only                         (ORANGE)
+// 1 = delivered only                        (ORANGE)
 // 2 = delivered + review, no payment        (YELLOW)
-// 3 = payment received                       (GREEN - bottom)
+// 3 = payment received                      (GREEN - bottom)
 function getPriorityScore(order: Order): number {
   if (order.paymentReceived) return 3;
   if (order.delivered && order.reviewWritten) return 2;
@@ -72,7 +72,6 @@ function getBadge(order: Order): string {
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [dark, setDark] = useState(true);
@@ -111,9 +110,9 @@ export default function DashboardPage() {
     field: 'delivered' | 'reviewWritten' | 'paymentReceived',
     current: boolean
   ) => {
-    const tsField = field === 'delivered' ? 'deliveredAt'
-      : field === 'reviewWritten' ? 'reviewWrittenAt'
-      : 'paymentReceivedAt';
+    const tsField =
+      field === 'delivered' ? 'deliveredAt' :
+      field === 'reviewWritten' ? 'reviewWrittenAt' : 'paymentReceivedAt';
     await updateDoc(doc(db, 'orders', orderId), {
       [field]: !current,
       [tsField]: !current ? Timestamp.now() : null,
@@ -130,211 +129,211 @@ export default function DashboardPage() {
   const fmtTs = (ts: Timestamp | null) => {
     if (!ts) return '';
     const d = ts.toDate();
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' '
-      + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <div className={dark ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
-        {/* ----- Navbar ----- */}
-        <nav className="bg-white dark:bg-gray-800 shadow px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-          <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">ProTrack</span>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setDark(!dark)}
-              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              {dark ? 'Light' : 'Dark'}
-            </button>
-            <button onClick={() => router.push('/add')}
-              className="bg-indigo-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
-              + Add
-            </button>
-            <button onClick={logout} className="text-sm text-red-500 hover:underline">Logout</button>
-          </div>
-        </nav>
+      {/* ----- Navbar ----- */}
+      <nav className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 shadow">
+        <span className="text-lg font-bold text-indigo-600">ProTrack</span>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setDark(!dark)} className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            {dark ? 'Light' : 'Dark'}
+          </button>
+          <button onClick={() => router.push('/add')} className="bg-indigo-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
+            + Add
+          </button>
+          <button onClick={logout} className="text-red-500 text-sm hover:underline">Logout</button>
+        </div>
+      </nav>
 
-        <div className="p-4">
-          {loading && <p className="text-center text-gray-400 py-10">Loading...</p>}
-          {!loading && orders.length === 0 && (
-            <p className="text-center text-gray-400 py-10">No records yet. Click + Add to start.</p>
-          )}
+      {loading && <div className="flex justify-center items-center h-64 text-gray-400">Loading...</div>}
+      {!loading && orders.length === 0 && (
+        <div className="flex justify-center items-center h-64 text-gray-400">No records yet. Click + Add to start.</div>
+      )}
 
-          {/* ===== PC TABLE (md and up) ===== */}
-          {!loading && orders.length > 0 && (
-            <div className="hidden md:block overflow-x-auto rounded-xl shadow">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-left text-xs uppercase tracking-wide">
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Product</th>
-                    <th className="px-3 py-2">Order #</th>
-                    <th className="px-3 py-2">Market</th>
-                    <th className="px-3 py-2">Seller</th>
-                    <th className="px-3 py-2">Review</th>
-                    <th className="px-3 py-2">PayPal</th>
-                    <th className="px-3 py-2 text-right">Prod $</th>
-                    <th className="px-3 py-2 text-right">Comm $</th>
-                    <th className="px-3 py-2 text-right">Total</th>
-                    <th className="px-3 py-2 text-center">Delivered</th>
-                    <th className="px-3 py-2 text-center">Review</th>
-                    <th className="px-3 py-2 text-center">Paid</th>
-                    <th className="px-3 py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {orders.map(order => {
-                    const commission = order.commissionAmount || 0;
-                    const total = order.price + commission;
-                    return (
-                      <tr key={order.id} className={`${getRowBg(order)} transition-colors`}>
-
-                        {/* Status badge */}
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getBadge(order)}`}>
-                            {getLabel(order)}
-                          </span>
-                        </td>
-
-                        {/* Product name */}
-                        <td className="px-3 py-2 font-semibold text-gray-800 dark:text-white whitespace-nowrap">{order.productName}</td>
-
-                        {/* Order number */}
-                        <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 font-mono whitespace-nowrap">{order.orderNumber}</td>
-
-                        {/* Marketplace */}
-                        <td className="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">{order.marketplace}</td>
-
-                        {/* Seller - tiny */}
-                        <td className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{order.sellerName || '—'}</td>
-
-                        {/* Review type */}
-                        <td className="px-3 py-2 text-xs text-gray-500">{order.reviewType === 'text+pic' ? 'Txt+Pic' : 'Text'}</td>
-
-                        {/* PayPal */}
-                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{order.paypalAccount}</td>
-
-                        {/* Product $ - tiny */}
-                        <td className="px-3 py-2 text-right text-xs text-gray-400">${order.price.toFixed(2)}</td>
-
-                        {/* Commission $ - tiny */}
-                        <td className="px-3 py-2 text-right text-xs text-gray-400">{commission > 0 ? `$${commission.toFixed(2)}` : '—'}</td>
-
-                        {/* Total - bold */}
-                        <td className="px-3 py-2 text-right font-bold text-gray-800 dark:text-white whitespace-nowrap">${total.toFixed(2)}</td>
-
-                        {/* Delivered */}
-                        <td className="px-3 py-2 text-center">
-                          <div className="flex flex-col items-center">
-                            <input type="checkbox" checked={order.delivered}
-                              onChange={() => toggleField(order.id, 'delivered', order.delivered)}
-                              className="w-4 h-4 accent-indigo-600 cursor-pointer" />
-                            {order.deliveredAt && <span className="text-[9px] text-gray-400 mt-0.5">{fmtTs(order.deliveredAt)}</span>}
-                          </div>
-                        </td>
-
-                        {/* Review written */}
-                        <td className="px-3 py-2 text-center">
-                          <div className="flex flex-col items-center">
-                            <input type="checkbox" checked={order.reviewWritten}
-                              onChange={() => toggleField(order.id, 'reviewWritten', order.reviewWritten)}
-                              className="w-4 h-4 accent-indigo-600 cursor-pointer" />
-                            {order.reviewWrittenAt && <span className="text-[9px] text-gray-400 mt-0.5">{fmtTs(order.reviewWrittenAt)}</span>}
-                          </div>
-                        </td>
-
-                        {/* Payment received */}
-                        <td className="px-3 py-2 text-center">
-                          <div className="flex flex-col items-center">
-                            <input type="checkbox" checked={order.paymentReceived}
-                              onChange={() => toggleField(order.id, 'paymentReceived', order.paymentReceived)}
-                              className="w-4 h-4 accent-green-600 cursor-pointer" />
-                            {order.paymentReceivedAt && <span className="text-[9px] text-gray-400 mt-0.5">{fmtTs(order.paymentReceivedAt)}</span>}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <button onClick={() => router.push(`/edit/${order.id}`)}
-                            className="text-indigo-600 hover:underline text-xs mr-2 font-medium">Edit</button>
-                          <button onClick={() => deleteOrder(order.id)}
-                            className="text-red-500 hover:underline text-xs">Del</button>
-                        </td>
-
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* ===== MOBILE CARDS (below md) ===== */}
-          {!loading && orders.length > 0 && (
-            <div className="md:hidden space-y-3">
+      {/* ===== PC TABLE (md and up) ===== */}
+      {!loading && orders.length > 0 && (
+        <div className="hidden md:block overflow-x-auto mt-2">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-100 dark:bg-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Product</th>
+                <th className="px-3 py-2 text-left">Market</th>
+                <th className="px-3 py-2 text-left">Seller</th>
+                <th className="px-3 py-2 text-left">PayPal</th>
+                <th className="px-3 py-2 text-right">Prod $</th>
+                <th className="px-3 py-2 text-right">Total</th>
+                <th className="px-3 py-2 text-center">Delivered</th>
+                <th className="px-3 py-2 text-center">Review</th>
+                <th className="px-3 py-2 text-center">Paid</th>
+                <th className="px-3 py-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
               {orders.map(order => {
                 const commission = order.commissionAmount || 0;
                 const total = order.price + commission;
                 return (
-                  <div key={order.id} className={`rounded-xl shadow-sm p-4 ${getCardBorder(order)}`}>
+                  <tr key={order.id} className={`${getRowBg(order)} border-b border-gray-200 dark:border-gray-700`}>
 
-                    {/* Top row */}
-                    <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <p className="font-semibold text-gray-800 dark:text-white">{order.productName}</p>
-                        <p className="text-xs text-gray-500 font-mono">{order.orderNumber}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{order.marketplace}</p>
-                        {order.sellerName && <p className="text-[11px] text-gray-400">{order.sellerName}</p>}
-                      </div>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getBadge(order)}`}>
+                    {/* Status badge */}
+                    <td className="px-3 py-2">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadge(order)}`}>
                         {getLabel(order)}
                       </span>
-                    </div>
+                    </td>
 
-                    {/* Amount row */}
-                    <div className="flex gap-3 items-baseline mb-1">
-                      <span className="font-bold text-lg text-gray-800 dark:text-white">${total.toFixed(2)}</span>
-                      <span className="text-xs text-gray-400">Prod: ${order.price.toFixed(2)}</span>
-                      {commission > 0 && <span className="text-xs text-gray-400">Comm: ${commission.toFixed(2)}</span>}
-                    </div>
+                    {/* Product name + order number tiny below */}
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{order.productName}</div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{order.orderNumber}</div>
+                    </td>
 
-                    {/* Review type + PayPal */}
-                    <p className="text-xs text-gray-500 mb-3">
-                      {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} · {order.paypalAccount}
-                    </p>
+                    {/* Marketplace */}
+                    <td className="px-3 py-2">{order.marketplace}</td>
 
-                    {/* Checkboxes */}
-                    <div className="flex gap-5 mb-3">
-                      {(['delivered', 'reviewWritten', 'paymentReceived'] as const).map(field => {
-                        const label = field === 'delivered' ? 'Delivered' : field === 'reviewWritten' ? 'Review' : 'Paid';
-                        const ts = field === 'delivered' ? order.deliveredAt : field === 'reviewWritten' ? order.reviewWrittenAt : order.paymentReceivedAt;
-                        return (
-                          <div key={field} className="flex flex-col items-center gap-0.5">
-                            <input type="checkbox" checked={order[field]}
-                              onChange={() => toggleField(order.id, field, order[field])}
-                              className="w-4 h-4 accent-indigo-600 cursor-pointer" />
-                            <span className="text-[10px] text-gray-500">{label}</span>
-                            {ts && <span className="text-[9px] text-gray-400">{fmtTs(ts)}</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/* Seller + review type tiny below */}
+                    <td className="px-3 py-2">
+                      <div>{order.sellerName || '—'}</div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                        {order.reviewType === 'text+pic' ? 'Txt+Pic' : 'Text'}
+                      </div>
+                    </td>
+
+                    {/* PayPal */}
+                    <td className="px-3 py-2">{order.paypalAccount}</td>
+
+                    {/* Prod $ + commission tiny below */}
+                    <td className="px-3 py-2 text-right">
+                      <div>${order.price.toFixed(2)}</div>
+                      {commission > 0 && (
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">+${commission.toFixed(2)} comm</div>
+                      )}
+                    </td>
+
+                    {/* Total - bold */}
+                    <td className="px-3 py-2 text-right font-bold">${total.toFixed(2)}</td>
+
+                    {/* Delivered */}
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <input type="checkbox" checked={order.delivered}
+                          onChange={() => toggleField(order.id, 'delivered', order.delivered)}
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                        {order.deliveredAt && <span className="text-[9px] text-gray-400">{fmtTs(order.deliveredAt)}</span>}
+                      </div>
+                    </td>
+
+                    {/* Review written */}
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <input type="checkbox" checked={order.reviewWritten}
+                          onChange={() => toggleField(order.id, 'reviewWritten', order.reviewWritten)}
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                        {order.reviewWrittenAt && <span className="text-[9px] text-gray-400">{fmtTs(order.reviewWrittenAt)}</span>}
+                      </div>
+                    </td>
+
+                    {/* Payment received */}
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <input type="checkbox" checked={order.paymentReceived}
+                          onChange={() => toggleField(order.id, 'paymentReceived', order.paymentReceived)}
+                          className="w-4 h-4 accent-green-600 cursor-pointer" />
+                        {order.paymentReceivedAt && <span className="text-[9px] text-gray-400">{fmtTs(order.paymentReceivedAt)}</span>}
+                      </div>
+                    </td>
 
                     {/* Actions */}
-                    <div className="flex gap-3">
-                      <button onClick={() => router.push(`/edit/${order.id}`)}
-                        className="text-indigo-600 hover:underline text-sm font-medium">Edit</button>
-                      <button onClick={() => deleteOrder(order.id)}
-                        className="text-red-500 hover:underline text-sm">Delete</button>
-                    </div>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-3">
+                        <button onClick={() => router.push(`/edit/${order.id}`)}
+                          className="text-indigo-600 hover:underline text-xs font-medium">Edit</button>
+                        <button onClick={() => deleteOrder(order.id)}
+                          className="text-red-500 hover:underline text-xs">Del</button>
+                      </div>
+                    </td>
 
-                  </div>
+                  </tr>
                 );
               })}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
+
+      {/* ===== MOBILE CARDS (below md) ===== */}
+      {!loading && orders.length > 0 && (
+        <div className="md:hidden flex flex-col gap-3 p-3">
+          {orders.map(order => {
+            const commission = order.commissionAmount || 0;
+            const total = order.price + commission;
+            return (
+              <div key={order.id} className={`rounded-lg p-3 shadow ${getCardBorder(order)}`}>
+
+                {/* Top row */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-semibold text-sm">{order.productName}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">{order.orderNumber}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{order.marketplace}</div>
+                    {order.sellerName && (
+                      <div className="text-[10px] text-gray-400">{order.sellerName}</div>
+                    )}
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getBadge(order)}`}>
+                    {getLabel(order)}
+                  </span>
+                </div>
+
+                {/* Amount row */}
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="font-bold text-base">${total.toFixed(2)}</span>
+                  <span className="text-[10px] text-gray-400">Prod: ${order.price.toFixed(2)}</span>
+                  {commission > 0 && <span className="text-[10px] text-gray-400">Comm: ${commission.toFixed(2)}</span>}
+                </div>
+
+                {/* Review type + PayPal */}
+                <div className="text-[10px] text-gray-400 mt-1">
+                  {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} · {order.paypalAccount}
+                </div>
+
+                {/* Checkboxes */}
+                <div className="flex gap-4 mt-2">
+                  {(['delivered', 'reviewWritten', 'paymentReceived'] as const).map(field => {
+                    const label = field === 'delivered' ? 'Delivered' : field === 'reviewWritten' ? 'Review' : 'Paid';
+                    const ts = field === 'delivered' ? order.deliveredAt : field === 'reviewWritten' ? order.reviewWrittenAt : order.paymentReceivedAt;
+                    return (
+                      <div key={field} className="flex flex-col items-center gap-0.5">
+                        <input type="checkbox" checked={order[field]}
+                          onChange={() => toggleField(order.id, field, order[field])}
+                          className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                        <span className="text-[10px] text-gray-500">{label}</span>
+                        {ts && <span className="text-[9px] text-gray-400">{fmtTs(ts)}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-2">
+                  <button onClick={() => router.push(`/edit/${order.id}`)}
+                    className="text-indigo-600 hover:underline text-sm font-medium">Edit</button>
+                  <button onClick={() => deleteOrder(order.id)}
+                    className="text-red-500 hover:underline text-sm">Delete</button>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
     </div>
   );
 }

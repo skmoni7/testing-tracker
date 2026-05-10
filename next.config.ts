@@ -1,9 +1,15 @@
 import type { NextConfig } from 'next'
 
+// When BUILD_APK=true (set in GitHub Actions), use static export for Capacitor.
+// Otherwise use default Next.js config for Vercel web deployment.
+const isApkBuild = process.env.BUILD_APK === 'true'
+
 const nextConfig: NextConfig = {
-  output: 'export',
-  trailingSlash: true,
-  images: { unoptimized: true },
+  ...(isApkBuild && {
+    output: 'export',
+    trailingSlash: true,
+    images: { unoptimized: true },
+  }),
   reactStrictMode: true,
 }
 

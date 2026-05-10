@@ -30,15 +30,15 @@ jobs:
 
       - name: Build Next.js static export
         run: npm run build
-                env:
+        env:
           BUILD_APK: 'true'
 
-      - name: Capacitor sync Android
-                run: npx cap add android && npx cap sync android
+      - name: Capacitor add and sync Android
+        run: npx cap add android && npx cap sync android
 
-      
       - name: Make gradlew executable
-                run: chmod +x android/gradlew
+        run: chmod +x android/gradlew
+
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug --no-daemon
 

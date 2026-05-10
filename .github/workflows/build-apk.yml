@@ -27,10 +27,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Capacitor add and sync Android
-        run: |
-          npx cap add android || true
-          npx cap sync android
+      - name: Add Android platform
+        run: npx cap add android || true
+
+      - name: Create Android assets directory
+        run: mkdir -p android/app/src/main/assets
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew

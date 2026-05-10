@@ -365,53 +365,57 @@ export default function DashboardPage() {
               <div key={order.id} className={`rounded-xl p-3 shadow-sm ${getCardBorder(order)}`}>
 
                 {/* Top row */}
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-sm">{order.productName}</div>
-                    <div className="text-[10px] text-gray-400">{order.orderNumber}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{order.marketplace}</div>
-                    {order.sellerName && (
-                      <div className="text-xs text-gray-500">{order.sellerName}</div>
-                    )}
+<div className="flex flex-row gap-2">
+            {/* Left: info column */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm truncate">{order.productName}</div>
+                  <div className="text-[10px] text-gray-400">{order.orderNumber}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{order.marketplace}</div>
+                  {order.sellerName && (
+                    <div className="text-xs text-gray-500">{order.sellerName}</div>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadge(order)}`}>
+                  {getLabel(order)}
+                </span>
+              </div>
+
+              {/* Amount row */}
+              <div className="mt-1 text-sm">
+                <span className="font-bold">${total.toFixed(2)}</span>
+                &nbsp;&nbsp;
+                <span className="text-xs text-gray-500">Prod: ${order.price.toFixed(2)}</span>
+                {commission > 0 && <span className="text-xs text-gray-400"> Comm: ${commission.toFixed(2)}</span>}
+              </div>
+
+              {/* Review type + PayPal */}
+              <div className="text-xs text-gray-400 mt-0.5">
+                {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} &middot; {order.paypalAccount}
+              </div>
+            </div>
+
+            {/* Right: checkboxes column */}
+            <div className="flex flex-col items-center gap-2 pl-2 border-l border-gray-300 dark:border-gray-600 shrink-0">
+              {(['delivered', 'reviewWritten', 'paymentReceived'] as const).map(field => {
+                const label = field === 'delivered' ? 'Del' : field === 'reviewWritten' ? 'Rev' : 'Paid';
+                const ts = field === 'delivered' ? order.deliveredAt : field === 'reviewWritten' ? order.reviewWrittenAt : order.paymentReceivedAt;
+                return (
+                  <div key={field} className="flex flex-col items-center gap-0.5">
+                    <input
+                      type="checkbox"
+                      checked={order[field]}
+                      onChange={() => toggleField(order.id, field, order[field])}
+                      className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                    />
+                    <span className="text-[9px] text-gray-500 leading-tight">{label}</span>
+                    {ts && <span className="text-[8px] text-gray-400 leading-tight">{fmtTs(ts)}</span>}
                   </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadge(order)}`}>
-                    {getLabel(order)}
-                  </span>
-                </div>
-
-                {/* Amount row */}
-                <div className="mt-2 text-sm">
-                  <span className="font-bold">${total.toFixed(2)}</span>
-                  &nbsp;&nbsp;
-                  <span className="text-xs text-gray-500">Prod: ${order.price.toFixed(2)}</span>
-                  {commission > 0 && <span className="text-xs text-gray-400"> &nbsp;Comm: ${commission.toFixed(2)}</span>}
-                </div>
-
-                {/* Review type + PayPal */}
-                <div className="text-xs text-gray-400 mt-1">
-                  {order.reviewType === 'text+pic' ? 'Text + Pic' : 'Text only'} &middot; {order.paypalAccount}
-                </div>
-
-                {/* Checkboxes */}
-                <div className="flex gap-4 mt-2">
-                  {(['delivered', 'reviewWritten', 'paymentReceived'] as const).map(field => {
-                    const label = field === 'delivered' ? 'Delivered' : field === 'reviewWritten' ? 'Review' : 'Paid';
-                    const ts = field === 'delivered' ? order.deliveredAt : field === 'reviewWritten' ? order.reviewWrittenAt : order.paymentReceivedAt;
-                    return (
-                      <div key={field} className="flex flex-col items-center gap-0.5">
-                        <input
-                          type="checkbox"
-                          checked={order[field]}
-                          onChange={() => toggleField(order.id, field, order[field])}
-                          className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                        />
-                        <span className="text-[10px] text-gray-500">{label}</span>
-                        {ts && <span className="text-[9px] text-gray-400">{fmtTs(ts)}</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-
+                );
+              })}
+            </div>
+          </div>
                 {/* Actions */}
                 <div className="flex gap-3 mt-2">
                   <button

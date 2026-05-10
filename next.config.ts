@@ -1,7 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // No special config needed - Next.js App Router works out of the box
+  output: 'export',
+  trailingSlash: true,
+  images: { unoptimized: true },
   reactStrictMode: true,
 }
 

@@ -16,8 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
         working-directory: mobile
@@ -35,4 +33,4 @@ jobs:
         run: eas build --platform android --profile preview --non-interactive
 
       - name: Print download link
-        run: echo "Build complete! Download your APK from https://expo.dev/accounts/[your-account]/builds"
+        run: echo "Build complete! Download your APK from https://expo.dev"

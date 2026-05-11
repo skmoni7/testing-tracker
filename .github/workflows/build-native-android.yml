@@ -2,6 +2,10 @@ name: Build Native Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mobile-native/**'
 
 jobs:
   build:
@@ -18,17 +22,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Make gradlew executable
-        run: chmod +x mobile-native/gradlew
-        working-directory: .
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
         working-directory: mobile-native
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ProTrack-Native-Debug
+          name: app-debug
           path: mobile-native/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7

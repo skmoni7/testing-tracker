@@ -1,0 +1,38 @@
+name: Build Android APK (Preview)
+
+on:
+  workflow_dispatch:  # Manual trigger from GitHub Actions tab
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android APK
+        working-directory: mobile
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Print download link
+        run: echo "Build complete! Download your APK from https://expo.dev/accounts/[your-account]/builds"

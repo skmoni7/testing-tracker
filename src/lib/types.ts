@@ -11,9 +11,10 @@ export interface Order {
   productName: string
   orderNumber: string
   marketplace: string
-  sellerName: string          // new: seller name (optional, defaults to '')
+  sellerName: string          // seller name (optional, defaults to '')
   price: number
-  commissionAmount: number    // new: commission (optional, defaults to 0)
+  commissionAmount: number    // commission (optional, defaults to 0)
+  amountCredited: number      // new: actual amount credited/received for this order
   reviewType: 'text' | 'text+pic'
   paypalAccount: 'Shanu PP' | 'Jisa PP'
   delivered: boolean

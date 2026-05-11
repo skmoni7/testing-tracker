@@ -1,7 +1,7 @@
 // ======================================================
 // ADD ORDER PAGE
 // Form to create a new free testing product order
-// Includes: marketplace, seller name, commission amount
+// Includes: marketplace, seller name, commission amount, amount credited
 // ======================================================
 'use client';
 import { useState, useEffect } from 'react';
@@ -32,6 +32,7 @@ export default function AddPage() {
   const [newMarketplace, setNewMarketplace] = useState('');
   const [price, setPrice] = useState('');
   const [commissionAmount, setCommissionAmount] = useState('');
+  const [amountCredited, setAmountCredited] = useState('');
   const [reviewType, setReviewType] = useState<'text' | 'text+pic'>('text');
   const [paypalAccount, setPaypalAccount] = useState<'Shanu PP' | 'Jisa PP'>('Shanu PP');
   const [loading, setLoading] = useState(false);
@@ -101,6 +102,7 @@ export default function AddPage() {
         sellerName: finalSeller,
         price: parseFloat(price) || 0,
         commissionAmount: parseFloat(commissionAmount) || 0,
+        amountCredited: parseFloat(amountCredited) || 0,
         reviewType,
         paypalAccount,
         delivered: false,
@@ -239,6 +241,20 @@ export default function AddPage() {
               min="0"
               value={commissionAmount}
               onChange={e => setCommissionAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+
+          {/* ----- Amount Credited (actual amount received) ----- */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amt Cr ($) <span className="text-gray-400 font-normal">(amount credited/received)</span></label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={amountCredited}
+              onChange={e => setAmountCredited(e.target.value)}
               placeholder="0.00"
               className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />

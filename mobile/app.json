@@ -17,9 +17,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "protrack-mobile"
+        "projectId": "98f52b8e-5f32-4cc4-b29a-43e9106a6306"
       }
     },
+    "owner": "shanukmoni",
     "platforms": ["ios", "android"]
   }
 }

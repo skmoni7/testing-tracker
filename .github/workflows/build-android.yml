@@ -1,7 +1,7 @@
 name: Build Android APK (Preview)
 
 on:
-  workflow_dispatch:  # Manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,9 +28,13 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Create or link Expo project
+        working-directory: mobile
+        run: eas init --id protrack-mobile --non-interactive || true
+
       - name: Build Android APK
         working-directory: mobile
-        run: eas build --platform android --profile preview --non-interactive
+        run: eas build --platform android --profile preview --non-interactive --no-wait
 
       - name: Print download link
-        run: echo "Build complete! Download your APK from https://expo.dev"
+        run: echo "Build submitted! Check https://expo.dev for your APK download link when done."

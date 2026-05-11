@@ -28,13 +28,17 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Create or link Expo project
+      - name: Verify config files
         working-directory: mobile
-        run: eas init --id protrack-mobile --non-interactive || true
+        run: |
+          echo "=== app.json ==="
+          cat app.json
+          echo "=== eas.json ==="
+          cat eas.json
 
       - name: Build Android APK
         working-directory: mobile
         run: eas build --platform android --profile preview --non-interactive --no-wait
 
-      - name: Print download link
-        run: echo "Build submitted! Check https://expo.dev for your APK download link when done."
+      - name: Done
+        run: echo "Build submitted! Check https://expo.dev for your APK download link."

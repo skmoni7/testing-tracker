@@ -4,6 +4,7 @@
 // Full row color highlight based on status
 // PC: horizontal table | Mobile: card layout
 // Navbar: 5 summary boxes (Total / Comm / Amt Cr / Received / Pending)
+// Amt Cr: inline live input on dashboard, green if >= total, red if < total
 // ======================================================
 'use client';
 import { useState, useEffect } from 'react';
@@ -69,12 +70,23 @@ function getBadge(order: Order): string {
   return 'bg-red-200 text-red-900';
 }
 
+// ----- Amt Cr color: green if >= total, red if < total (only when value > 0) -----
+function getAmtCrColor(amtCr: number, total: number): string {
+  if (amtCr <= 0) return 'text-gray-400';
+  return amtCr >= total
+    ? 'text-green-600 dark:text-green-400 font-semibold'
+    : 'text-red-500 dark:text-red-400 font-semibold';
+}
+
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [dark, setDark] = useState(true);
+
+  // ----- Local state for inline Amt Cr editing (orderId -> string value) -----
+  const [amtCrDraft, setAmtCrDraft] = useState<Record<string, string>>({});
 
   // ----- Dark mode toggle -----
   useEffect(() => {
@@ -106,7 +118,6 @@ export default function DashboardPage() {
   // ----- Summary calculations -----
   const totalAmount = orders.reduce((sum, o) => sum + (o.price || 0), 0);
   const commAmount = orders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
-  // Amt Cr = sum of all amountCredited fields across all orders
   const amtCrTotal = orders.reduce((sum, o) => sum + (o.amountCredited || 0), 0);
   const receivedAmount = orders
     .filter(o => o.paymentReceived)
@@ -127,6 +138,21 @@ export default function DashboardPage() {
       [field]: !current,
       [tsField]: !current ? Timestamp.now() : null,
     });
+  };
+
+  // ----- Save Amt Cr inline to Firestore on blur or Enter -----
+  const saveAmtCr = async (orderId: string, value: string) => {
+    const parsed = parseFloat(value);
+    const amount = isNaN(parsed) ? 0 : parsed;
+    await updateDoc(doc(db, 'orders', orderId), { amountCredited: amount });
+    // Clear draft after save
+    setAmtCrDraft(prev => { const n = { ...prev }; delete n[orderId]; return n; });
+  };
+
+  // ----- Get display value for Amt Cr input (draft takes priority over saved) -----
+  const getAmtCrValue = (order: Order): string => {
+    if (order.id in amtCrDraft) return amtCrDraft[order.id];
+    return (order.amountCredited || 0) > 0 ? String(order.amountCredited) : '';
   };
 
   // ----- Delete order -----
@@ -171,7 +197,7 @@ export default function DashboardPage() {
               <span className="text-sm font-bold">${commAmount.toFixed(2)}</span>
             </div>
 
-            {/* Amt Cr box — sum of all credited amounts */}
+            {/* Amt Cr box */}
             <div className="flex flex-col items-center px-2 py-1 rounded-lg border border-teal-400 bg-teal-600 text-white min-w-[64px]">
               <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">Amt Cr</span>
               <span className="text-sm font-bold">${amtCrTotal.toFixed(2)}</span>
@@ -241,6 +267,7 @@ export default function DashboardPage() {
                 const commission = order.commissionAmount || 0;
                 const total = order.price + commission;
                 const amtCr = order.amountCredited || 0;
+                const amtCrColorClass = getAmtCrColor(amtCr, total);
                 return (
                   <tr key={order.id} className={`border-b border-gray-200 dark:border-gray-700 ${getRowBg(order)}`}>
 
@@ -275,12 +302,19 @@ export default function DashboardPage() {
 
                     <td className="px-3 py-2 text-right font-bold">${total.toFixed(2)}</td>
 
-                    {/* Amt Cr column */}
+                    {/* Amt Cr — inline editable input */}
                     <td className="px-3 py-2 text-right">
-                      {amtCr > 0
-                        ? <span className="text-teal-600 dark:text-teal-400 font-semibold">${amtCr.toFixed(2)}</span>
-                        : <span className="text-gray-400">—</span>
-                      }
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={getAmtCrValue(order)}
+                        onChange={e => setAmtCrDraft(prev => ({ ...prev, [order.id]: e.target.value }))}
+                        onBlur={e => saveAmtCr(order.id, e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        className={`w-20 text-right bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:outline-none focus:border-indigo-400 text-sm ${amtCrColorClass}`}
+                      />
                     </td>
 
                     <td className="px-3 py-2 text-center">
@@ -334,6 +368,7 @@ export default function DashboardPage() {
             const commission = order.commissionAmount || 0;
             const total = order.price + commission;
             const amtCr = order.amountCredited || 0;
+            const amtCrColorClass = getAmtCrColor(amtCr, total);
             return (
               <div key={order.id} className={`rounded-xl p-3 shadow-sm ${getCardBorder(order)}`}>
 
@@ -355,15 +390,26 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    {/* Amount row — total + Amt Cr on same line */}
+                    {/* Amount row — total + inline Amt Cr input on same line */}
                     <div className="mt-1 flex items-baseline gap-2 flex-wrap">
                       <span className="font-bold text-sm">${total.toFixed(2)}</span>
                       <span className="text-xs text-gray-500">Prod: ${order.price.toFixed(2)}</span>
                       {commission > 0 && <span className="text-xs text-gray-400">Comm: ${commission.toFixed(2)}</span>}
-                      {/* Amt Cr — same line, teal color */}
-                      {amtCr > 0 && (
-                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">Cr: ${amtCr.toFixed(2)}</span>
-                      )}
+                      {/* Inline Amt Cr input */}
+                      <span className="flex items-baseline gap-1">
+                        <span className="text-xs text-gray-400">Cr:</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={getAmtCrValue(order)}
+                          onChange={e => setAmtCrDraft(prev => ({ ...prev, [order.id]: e.target.value }))}
+                          onBlur={e => saveAmtCr(order.id, e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          className={`w-16 text-xs bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:outline-none focus:border-indigo-400 ${amtCrColorClass}`}
+                        />
+                      </span>
                     </div>
 
                     {/* Review type + PayPal */}

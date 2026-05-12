@@ -16,8 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Timestamp
@@ -131,6 +133,7 @@ fun DashboardScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBg)) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp).padding(top = 32.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -142,21 +145,18 @@ fun DashboardScreen(
                 }
             }
 
+            // All 5 summary boxes in ONE horizontal row, each 1/5 width
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                SummaryBox("Total", "${"$"}${"%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
-                SummaryBox("Amt Cr", "${"$"}${"%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SummaryBox("Comm", "${"$"}${"%.2f".format(commSum)}", Color(0xFFFF8800), Modifier.weight(1f))
-                SummaryBox("Received", "${"$"}${"%.2f".format(receivedSum)}", Color(0xFF4CAF50), Modifier.weight(1f))
-                SummaryBox("Pending", "${"$"}${"%.2f".format(pendingSum)}", Color(0xFFFF4444), Modifier.weight(1f))
+                SummaryBox("Total",    "${"$"}${"%.2f".format(totalSum)}",    AccentBlue,           Modifier.weight(1f))
+                SummaryBox("Amt Cr",   "${"$"}${"%.2f".format(amtCrSum)}",    Color(0xFF00BCD4),    Modifier.weight(1f))
+                SummaryBox("Comm",     "${"$"}${"%.2f".format(commSum)}",     Color(0xFFFF8800),    Modifier.weight(1f))
+                SummaryBox("Received", "${"$"}${"%.2f".format(receivedSum)}", Color(0xFF4CAF50),    Modifier.weight(1f))
+                SummaryBox("Pending",  "${"$"}${"%.2f".format(pendingSum)}",  Color(0xFFFF4444),    Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -208,9 +208,12 @@ fun SummaryBox(label: String, value: String, color: Color, modifier: Modifier = 
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(label, fontSize = 11.sp, color = Color.Gray)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = color)
+        Column(
+            modifier = Modifier.padding(6.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(label, fontSize = 9.sp, color = Color.Gray, textAlign = TextAlign.Center)
+            Text(value, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color, textAlign = TextAlign.Center)
         }
     }
 }
@@ -269,13 +272,13 @@ fun OrderCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Bottom: checkboxes LEFT, Amt Cr compact box RIGHT
+            // Bottom: compact checkboxes LEFT, Amt Cr small box RIGHT
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Compact checkboxes on left
+                // Checkboxes left
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     CheckItemWithTimestamp(
                         label = "Delivery",
@@ -297,15 +300,23 @@ fun OrderCard(
                     )
                 }
 
-                // Compact Amt Cr box on right
+                // Compact Amt Cr box right — fixed size, centered text
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .border(1.dp, Color(0xFF444444), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .width(88.dp)
+                        .width(80.dp)
+                        .height(56.dp)
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
                 ) {
-                    Text("Amt Cr", fontSize = 10.sp, color = Color.Gray)
+                    Text(
+                        text = "Amt Cr",
+                        fontSize = 9.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     OutlinedTextField(
                         value = amtCrInput,
                         onValueChange = onAmtCrChange,
@@ -317,13 +328,15 @@ fun OrderCard(
                             focusedTextColor = amtCrColor,
                             unfocusedTextColor = amtCrColor
                         ),
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                        textStyle = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = amtCrColor
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(42.dp)
+                            .height(36.dp)
                     )
                 }
             }

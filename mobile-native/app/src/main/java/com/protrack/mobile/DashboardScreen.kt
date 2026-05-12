@@ -249,7 +249,7 @@ fun OrderCard(
         )
         Column(modifier = Modifier.padding(12.dp)) {
 
-            // Top row: product info + amounts
+            // Top: product info + amounts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -269,14 +269,14 @@ fun OrderCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Bottom row: checkboxes LEFT, Amt Cr box RIGHT
+            // Bottom: checkboxes LEFT, Amt Cr compact box RIGHT
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Checkboxes — compact, left side
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Compact checkboxes on left
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     CheckItemWithTimestamp(
                         label = "Delivery",
                         checked = order.delivered,
@@ -297,31 +297,38 @@ fun OrderCard(
                     )
                 }
 
-                // Amt Cr compact box — right side
+                // Compact Amt Cr box on right
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .border(1.dp, Color(0xFF444444), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                        .width(90.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .width(88.dp)
                 ) {
                     Text("Amt Cr", fontSize = 10.sp, color = Color.Gray)
-                    BasicTextField(
+                    OutlinedTextField(
                         value = amtCrInput,
                         onValueChange = onAmtCrChange,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            color = amtCrColor,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedTextColor = amtCrColor,
+                            unfocusedTextColor = amtCrColor
+                        ),
+                        textStyle = LocalTextStyle.current.copy(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp)
                     )
                 }
             }
 
-            // Action buttons row
+            // Action buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }

@@ -17,26 +17,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import java.text.SimpleDateFormat
+import java.util.*
+
+fun getPriorityOrder(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Int {
+    return when {
+        !delivered -> 0                                        // A - highest priority (red)
+        delivered && !reviewWritten -> 1                      // B (orange)
+        delivered && reviewWritten && !paymentReceived -> 2   // C (yellow)
+        else -> 3                                             // Done (green)
+    }
+}
 
 fun getPriorityColor(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Color {
-    return when {
-        !delivered && !reviewWritten && !paymentReceived -> Color(0xFFFF4444)
-        delivered && !reviewWritten -> Color(0xFFFF8800)
-        delivered && reviewWritten && !paymentReceived -> Color(0xFFFFD700)
+    return when (getPriorityOrder(delivered, reviewWritten, paymentReceived)) {
+        0 -> Color(0xFFFF4444)
+        1 -> Color(0xFFFF8800)
+        2 -> Color(0xFFFFD700)
         else -> Color(0xFF4CAF50)
     }
 }
 
 fun getPriorityLabel(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): String {
-    return when {
-        !delivered -> "Undelivered"
-        delivered && !reviewWritten -> "Review Pending"
-        delivered && reviewWritten && !paymentReceived -> "Payment Pending"
+    return when (getPriorityOrder(delivered, reviewWritten, paymentReceived)) {
+        0 -> "Undelivered"
+        1 -> "Review Pending"
+        2 -> "Payment Pending"
         else -> "Done"
     }
+}
+
+fun formatTimestamp(ts: Timestamp?): String {
+    if (ts == null || ts.seconds == 0L) return ""
+    val sdf = SimpleDateFormat("MMM d hh:mm a", Locale.getDefault())
+    return sdf.format(ts.toDate())
 }
 
 data class Order(
@@ -52,7 +70,10 @@ data class Order(
     val reviewType: String = "text",
     val delivered: Boolean = false,
     val reviewWritten: Boolean = false,
-    val paymentReceived: Boolean = false
+    val paymentReceived: Boolean = false,
+    val deliveredAt: Timestamp? = null,
+    val reviewWrittenAt: Timestamp? = null,
+    val paymentReceivedAt: Timestamp? = null
 )
 
 @Composable
@@ -71,7 +92,7 @@ fun DashboardScreen(
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snap, _ ->
                 snap?.let {
-                    orders = it.documents.map { doc ->
+                    val raw = it.documents.map { doc ->
                         Order(
                             id = doc.id,
                             productName = doc.getString("productName") ?: "",
@@ -85,15 +106,21 @@ fun DashboardScreen(
                             reviewType = doc.getString("reviewType") ?: "text",
                             delivered = doc.getBoolean("delivered") ?: false,
                             reviewWritten = doc.getBoolean("reviewWritten") ?: false,
-                            paymentReceived = doc.getBoolean("paymentReceived") ?: false
+                            paymentReceived = doc.getBoolean("paymentReceived") ?: false,
+                            deliveredAt = doc.getTimestamp("deliveredAt"),
+                            reviewWrittenAt = doc.getTimestamp("reviewWrittenAt"),
+                            paymentReceivedAt = doc.getTimestamp("paymentReceivedAt")
                         )
+                    }
+                    // Sort by priority: A (undelivered) first → B → C → Done last
+                    orders = raw.sortedBy { o ->
+                        getPriorityOrder(o.delivered, o.reviewWritten, o.paymentReceived)
                     }
                 }
             }
         onDispose { listener.remove() }
     }
 
-    // Summary calculations
     val totalSum = orders.sumOf { it.price + it.commissionAmount }
     val commSum = orders.sumOf { it.commissionAmount }
     val amtCrSum = orders.sumOf { it.amountCredited }
@@ -109,30 +136,29 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("ProTrack", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                TextButton(onClick = {
-                    auth.signOut()
-                    onLogout()
-                }) { Text("Logout", color = Color.Gray) }
+                TextButton(onClick = { auth.signOut(); onLogout() }) {
+                    Text("Logout", color = Color.Gray)
+                }
             }
 
-            // Summary row 1: Total + Amt Cr
+            // Summary row 1
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SummaryBox("Total", "$${ "%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
-                SummaryBox("Amt Cr", "$${ "%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
+                SummaryBox("Total", "${"$"}${"%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
+                SummaryBox("Amt Cr", "${"$"}${"%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Summary row 2: Comm + Received + Pending
+            // Summary row 2
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SummaryBox("Comm", "$${ "%.2f".format(commSum)}", Color(0xFFFF8800), Modifier.weight(1f))
-                SummaryBox("Received", "$${ "%.2f".format(receivedSum)}", Color(0xFF4CAF50), Modifier.weight(1f))
-                SummaryBox("Pending", "$${ "%.2f".format(pendingSum)}", Color(0xFFFF4444), Modifier.weight(1f))
+                SummaryBox("Comm", "${"$"}${"%.2f".format(commSum)}", Color(0xFFFF8800), Modifier.weight(1f))
+                SummaryBox("Received", "${"$"}${"%.2f".format(receivedSum)}", Color(0xFF4CAF50), Modifier.weight(1f))
+                SummaryBox("Pending", "${"$"}${"%.2f".format(pendingSum)}", Color(0xFFFF4444), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -154,7 +180,7 @@ fun DashboardScreen(
                                 else -> null
                             }
                             if (tsField != null) {
-                                updates[tsField] = if (!current) com.google.firebase.Timestamp.now() else com.google.firebase.Timestamp(0, 0)
+                                updates[tsField] = if (!current) Timestamp.now() else Timestamp(0, 0)
                             }
                             db.collection("orders").document(order.id).update(updates)
                         },
@@ -216,7 +242,6 @@ fun OrderCard(
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
-        // Priority color bar at top of card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -224,6 +249,7 @@ fun OrderCard(
                 .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
         )
         Column(modifier = Modifier.padding(12.dp)) {
+            // Product name + amounts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -235,12 +261,14 @@ fun OrderCard(
                     Text(order.paypalAccount, color = Color.Gray, fontSize = 11.sp)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("$${ "%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("Cr: $${ "%.2f".format(amtCrValue)}", color = amtCrColor, fontSize = 13.sp)
+                    Text("${"$"}${"%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Cr: ${"$"}${"%.2f".format(amtCrValue)}", color = amtCrColor, fontSize = 13.sp)
                     Text(priorityLabel, color = priorityColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
+
+            // Amt Cr input
             OutlinedTextField(
                 value = amtCrInput,
                 onValueChange = onAmtCrChange,
@@ -249,11 +277,29 @@ fun OrderCard(
                 singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Checkboxes with full labels and timestamps below each
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                CheckItem("Del", order.delivered) { onToggle("delivered", order.delivered) }
-                CheckItem("Rev", order.reviewWritten) { onToggle("reviewWritten", order.reviewWritten) }
-                CheckItem("Pay", order.paymentReceived) { onToggle("paymentReceived", order.paymentReceived) }
+                CheckItemWithTimestamp(
+                    label = "Delivery",
+                    checked = order.delivered,
+                    timestamp = formatTimestamp(order.deliveredAt),
+                    onToggle = { onToggle("delivered", order.delivered) }
+                )
+                CheckItemWithTimestamp(
+                    label = "Receive",
+                    checked = order.reviewWritten,
+                    timestamp = formatTimestamp(order.reviewWrittenAt),
+                    onToggle = { onToggle("reviewWritten", order.reviewWritten) }
+                )
+                CheckItemWithTimestamp(
+                    label = "Pay",
+                    checked = order.paymentReceived,
+                    timestamp = formatTimestamp(order.paymentReceivedAt),
+                    onToggle = { onToggle("paymentReceived", order.paymentReceived) }
+                )
             }
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }
@@ -266,13 +312,18 @@ fun OrderCard(
 }
 
 @Composable
-fun CheckItem(label: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
-        )
-        Text(label, color = Color.Gray, fontSize = 12.sp)
+fun CheckItemWithTimestamp(label: String, checked: Boolean, timestamp: String, onToggle: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = checked,
+                onCheckedChange = { onToggle() },
+                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
+            )
+            Text(label, color = Color.Gray, fontSize = 12.sp)
+        }
+        if (timestamp.isNotEmpty()) {
+            Text(timestamp, color = Color(0xFF888888), fontSize = 10.sp)
+        }
     }
 }

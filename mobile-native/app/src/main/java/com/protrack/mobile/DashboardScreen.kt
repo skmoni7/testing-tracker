@@ -24,9 +24,18 @@ import com.google.firebase.firestore.Query
 fun getPriorityColor(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Color {
     return when {
         !delivered && !reviewWritten && !paymentReceived -> Color(0xFFFF4444)
-        delivered && !reviewWritten && !paymentReceived -> Color(0xFFFF8800)
+        delivered && !reviewWritten -> Color(0xFFFF8800)
         delivered && reviewWritten && !paymentReceived -> Color(0xFFFFD700)
         else -> Color(0xFF4CAF50)
+    }
+}
+
+fun getPriorityLabel(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): String {
+    return when {
+        !delivered -> "Undelivered"
+        delivered && !reviewWritten -> "Review Pending"
+        delivered && reviewWritten && !paymentReceived -> "Payment Pending"
+        else -> "Done"
     }
 }
 
@@ -36,9 +45,11 @@ data class Order(
     val sellerName: String = "",
     val marketplace: String = "",
     val orderNumber: String = "",
-    val productAmount: Double = 0.0,
+    val price: Double = 0.0,
     val commissionAmount: Double = 0.0,
-    val amtCr: Double = 0.0,
+    val amountCredited: Double = 0.0,
+    val paypalAccount: String = "Shanu PP",
+    val reviewType: String = "text",
     val delivered: Boolean = false,
     val reviewWritten: Boolean = false,
     val paymentReceived: Boolean = false
@@ -67,9 +78,11 @@ fun DashboardScreen(
                             sellerName = doc.getString("sellerName") ?: "",
                             marketplace = doc.getString("marketplace") ?: "",
                             orderNumber = doc.getString("orderNumber") ?: "",
-                            productAmount = doc.getDouble("productAmount") ?: 0.0,
+                            price = doc.getDouble("price") ?: 0.0,
                             commissionAmount = doc.getDouble("commissionAmount") ?: 0.0,
-                            amtCr = doc.getDouble("amtCr") ?: 0.0,
+                            amountCredited = doc.getDouble("amountCredited") ?: 0.0,
+                            paypalAccount = doc.getString("paypalAccount") ?: "Shanu PP",
+                            reviewType = doc.getString("reviewType") ?: "text",
                             delivered = doc.getBoolean("delivered") ?: false,
                             reviewWritten = doc.getBoolean("reviewWritten") ?: false,
                             paymentReceived = doc.getBoolean("paymentReceived") ?: false
@@ -80,26 +93,46 @@ fun DashboardScreen(
         onDispose { listener.remove() }
     }
 
-    val totalSum = orders.sumOf { it.productAmount + it.commissionAmount }
-    val amtCrSum = orders.sumOf { it.amtCr }
+    // Summary calculations
+    val totalSum = orders.sumOf { it.price + it.commissionAmount }
+    val commSum = orders.sumOf { it.commissionAmount }
+    val amtCrSum = orders.sumOf { it.amountCredited }
+    val receivedSum = orders.filter { it.paymentReceived }.sumOf { it.amountCredited }
+    val pendingSum = orders.filter { !it.paymentReceived }.sumOf { it.price + it.commissionAmount }
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBg)) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp).padding(top = 32.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("ProTrack", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                TextButton(onClick = onLogout) { Text("Logout", color = Color.Gray) }
+                TextButton(onClick = {
+                    auth.signOut()
+                    onLogout()
+                }) { Text("Logout", color = Color.Gray) }
             }
 
+            // Summary row 1: Total + Amt Cr
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SummaryBox("Total", "$${"%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
-                SummaryBox("Amt Cr", "$${"%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
+                SummaryBox("Total", "$${ "%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
+                SummaryBox("Amt Cr", "$${ "%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Summary row 2: Comm + Received + Pending
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryBox("Comm", "$${ "%.2f".format(commSum)}", Color(0xFFFF8800), Modifier.weight(1f))
+                SummaryBox("Received", "$${ "%.2f".format(receivedSum)}", Color(0xFF4CAF50), Modifier.weight(1f))
+                SummaryBox("Pending", "$${ "%.2f".format(pendingSum)}", Color(0xFFFF4444), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -107,13 +140,23 @@ fun DashboardScreen(
                 items(orders) { order ->
                     OrderCard(
                         order = order,
-                        amtCrInput = amtCrInputs[order.id] ?: order.amtCr.toString(),
+                        amtCrInput = amtCrInputs[order.id] ?: order.amountCredited.toString(),
                         onAmtCrChange = { amtCrInputs = amtCrInputs + (order.id to it) },
                         onAmtCrSave = { value ->
-                            db.collection("orders").document(order.id).update("amtCr", value)
+                            db.collection("orders").document(order.id).update("amountCredited", value)
                         },
                         onToggle = { field, current ->
-                            db.collection("orders").document(order.id).update(field, !current)
+                            val updates = mutableMapOf<String, Any>(field to !current)
+                            val tsField = when (field) {
+                                "delivered" -> "deliveredAt"
+                                "reviewWritten" -> "reviewWrittenAt"
+                                "paymentReceived" -> "paymentReceivedAt"
+                                else -> null
+                            }
+                            if (tsField != null) {
+                                updates[tsField] = if (!current) com.google.firebase.Timestamp.now() else com.google.firebase.Timestamp(0, 0)
+                            }
+                            db.collection("orders").document(order.id).update(updates)
                         },
                         onEdit = { onEditOrder(order.id) },
                         onDelete = { db.collection("orders").document(order.id).delete() }
@@ -158,8 +201,9 @@ fun OrderCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val total = order.productAmount + order.commissionAmount
+    val total = order.price + order.commissionAmount
     val priorityColor = getPriorityColor(order.delivered, order.reviewWritten, order.paymentReceived)
+    val priorityLabel = getPriorityLabel(order.delivered, order.reviewWritten, order.paymentReceived)
     val amtCrValue = amtCrInput.toDoubleOrNull() ?: 0.0
     val amtCrColor = when {
         amtCrValue <= 0 -> Color.Gray
@@ -172,31 +216,35 @@ fun OrderCard(
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
+        // Priority color bar at top of card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+        )
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(order.productName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("${order.marketplace} - ${order.sellerName}", color = Color.Gray, fontSize = 12.sp)
+                    Text("${order.marketplace} · ${order.sellerName}", color = Color.Gray, fontSize = 12.sp)
+                    Text(order.paypalAccount, color = Color.Gray, fontSize = 11.sp)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("$${"%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(
-                        text = "Cr: $${"%.2f".format(amtCrValue)}",
-                        color = amtCrColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("$${ "%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Cr: $${ "%.2f".format(amtCrValue)}", color = amtCrColor, fontSize = 13.sp)
+                    Text(priorityLabel, color = priorityColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = amtCrInput,
                 onValueChange = onAmtCrChange,
-                label = { Text("Amt Cr") },
+                label = { Text("Amt Cr", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

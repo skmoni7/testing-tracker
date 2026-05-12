@@ -18,6 +18,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 val MARKETPLACES = listOf("Amazon", "Walmart", "Temu", "Shein", "Other")
+val PAYPAL_ACCOUNTS = listOf("Shanu PP", "Jisa PP")
+val REVIEW_TYPES = listOf("text", "text+pic")
 
 @Composable
 fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
@@ -29,8 +31,10 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
     var orderNumber by remember { mutableStateOf("") }
     var marketplace by remember { mutableStateOf("Amazon") }
     var sellerName by remember { mutableStateOf("") }
-    var productAmount by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
     var commissionAmount by remember { mutableStateOf("0") }
+    var paypalAccount by remember { mutableStateOf("Shanu PP") }
+    var reviewType by remember { mutableStateOf("text") }
     var loading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
 
@@ -42,8 +46,10 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
                     orderNumber = doc.getString("orderNumber") ?: ""
                     marketplace = doc.getString("marketplace") ?: "Amazon"
                     sellerName = doc.getString("sellerName") ?: ""
-                    productAmount = (doc.getDouble("productAmount") ?: 0.0).toString()
+                    price = (doc.getDouble("price") ?: 0.0).toString()
                     commissionAmount = (doc.getDouble("commissionAmount") ?: 0.0).toString()
+                    paypalAccount = doc.getString("paypalAccount") ?: "Shanu PP"
+                    reviewType = doc.getString("reviewType") ?: "text"
                 }
         }
     }
@@ -102,10 +108,10 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        FormLabel("Product Amount ($)")
+        FormLabel("Product Price ($)")
         OutlinedTextField(
-            value = productAmount,
-            onValueChange = { productAmount = it },
+            value = price,
+            onValueChange = { price = it },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("0.00", color = Color.Gray) }
         )
@@ -118,6 +124,30 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("0.00", color = Color.Gray) }
         )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FormLabel("PayPal Account")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PAYPAL_ACCOUNTS.forEach { pp ->
+                FilterChip(
+                    selected = paypalAccount == pp,
+                    onClick = { paypalAccount = pp },
+                    label = { Text(pp, fontSize = 12.sp) }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FormLabel("Review Type")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            REVIEW_TYPES.forEach { rt ->
+                FilterChip(
+                    selected = reviewType == rt,
+                    onClick = { reviewType = rt },
+                    label = { Text(rt, fontSize = 12.sp) }
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(32.dp))
 
         if (errorMsg.isNotEmpty()) {
@@ -134,15 +164,20 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
                     "orderNumber" to orderNumber,
                     "marketplace" to marketplace,
                     "sellerName" to sellerName,
-                    "productAmount" to (productAmount.toDoubleOrNull() ?: 0.0),
+                    "price" to (price.toDoubleOrNull() ?: 0.0),
                     "commissionAmount" to (commissionAmount.toDoubleOrNull() ?: 0.0),
+                    "paypalAccount" to paypalAccount,
+                    "reviewType" to reviewType,
                     "userId" to (auth.currentUser?.uid ?: "")
                 )
                 if (isNew) {
                     data["delivered"] = false
                     data["reviewWritten"] = false
                     data["paymentReceived"] = false
-                    data["amtCr"] = 0.0
+                    data["amountCredited"] = 0.0
+                    data["deliveredAt"] = Timestamp(0, 0)
+                    data["reviewWrittenAt"] = Timestamp(0, 0)
+                    data["paymentReceivedAt"] = Timestamp(0, 0)
                     data["createdAt"] = Timestamp.now()
                     db.collection("orders").add(data)
                         .addOnSuccessListener { onSaved() }

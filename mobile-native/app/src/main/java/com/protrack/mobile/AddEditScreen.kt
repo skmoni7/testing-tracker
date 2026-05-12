@@ -68,8 +68,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             value = productName,
             onValueChange = { productName = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Product name", color = Color.Gray) },
-            colors = fieldColors()
+            placeholder = { Text("Product name", color = Color.Gray) }
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -78,8 +77,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             value = orderNumber,
             onValueChange = { orderNumber = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Order #", color = Color.Gray) },
-            colors = fieldColors()
+            placeholder = { Text("Order #", color = Color.Gray) }
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -89,12 +87,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
                 FilterChip(
                     selected = marketplace == m,
                     onClick = { marketplace = m },
-                    label = { Text(m, fontSize = 12.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = AccentBlue,
-                        selectedLabelColor = Color.White,
-                        labelColor = Color.Gray
-                    )
+                    label = { Text(m, fontSize = 12.sp) }
                 )
             }
         }
@@ -105,8 +98,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             value = sellerName,
             onValueChange = { sellerName = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Seller name", color = Color.Gray) },
-            colors = fieldColors()
+            placeholder = { Text("Seller name", color = Color.Gray) }
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -115,8 +107,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             value = productAmount,
             onValueChange = { productAmount = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("0.00", color = Color.Gray) },
-            colors = fieldColors()
+            placeholder = { Text("0.00", color = Color.Gray) }
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -125,8 +116,7 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
             value = commissionAmount,
             onValueChange = { commissionAmount = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("0.00", color = Color.Gray) },
-            colors = fieldColors()
+            placeholder = { Text("0.00", color = Color.Gray) }
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -186,12 +176,3 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
 fun FormLabel(text: String) {
     Text(text, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
 }
-
-@Composable
-fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = Color.White,
-    unfocusedTextColor = Color.White,
-    focusedBorderColor = AccentBlue,
-    unfocusedBorderColor = Color(0xFF333333),
-    containerColor = DarkCard
-)

@@ -135,7 +135,6 @@ fun DashboardScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBg)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp).padding(top = 32.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -147,7 +146,6 @@ fun DashboardScreen(
                 }
             }
 
-            // All 5 summary boxes in one row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -160,9 +158,7 @@ fun DashboardScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 items(orders) { order ->
                     OrderCard(
                         order = order,
@@ -191,7 +187,6 @@ fun DashboardScreen(
                 }
             }
 
-            // Footer
             Text(
                 text = "developed by skm",
                 fontSize = 9.sp,
@@ -254,6 +249,7 @@ fun OrderCard(
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
+        // Priority color bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -261,6 +257,8 @@ fun OrderCard(
                 .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
         )
         Column(modifier = Modifier.padding(12.dp)) {
+
+            // Product info row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -280,26 +278,27 @@ fun OrderCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Checkboxes LEFT, Amt Cr box RIGHT
+            // Status boxes row + Amt Cr box
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    CheckItemWithTimestamp(
+                // Three status boxes side by side
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusCheckBox(
                         label = "Delivery",
                         checked = order.delivered,
                         timestamp = formatTimestamp(order.deliveredAt),
                         onToggle = { onToggle("delivered", order.delivered) }
                     )
-                    CheckItemWithTimestamp(
+                    StatusCheckBox(
                         label = "Receive",
                         checked = order.reviewWritten,
                         timestamp = formatTimestamp(order.reviewWrittenAt),
                         onToggle = { onToggle("reviewWritten", order.reviewWritten) }
                     )
-                    CheckItemWithTimestamp(
+                    StatusCheckBox(
                         label = "Pay",
                         checked = order.paymentReceived,
                         timestamp = formatTimestamp(order.paymentReceivedAt),
@@ -307,7 +306,7 @@ fun OrderCard(
                     )
                 }
 
-                // Amt Cr — using BasicTextField so content is always visible
+                // Amt Cr compact box
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -341,6 +340,7 @@ fun OrderCard(
                 }
             }
 
+            // Action buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }
@@ -352,20 +352,48 @@ fun OrderCard(
     }
 }
 
+// Colored box: label on top, checkbox in middle, timestamp at bottom
 @Composable
-fun CheckItemWithTimestamp(label: String, checked: Boolean, timestamp: String, onToggle: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = { onToggle() },
-                modifier = Modifier.size(20.dp),
-                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
+fun StatusCheckBox(label: String, checked: Boolean, timestamp: String, onToggle: () -> Unit) {
+    val bgColor = if (checked) Color(0x2200C853) else Color(0x22FF4444)   // light green / light red
+    val borderColor = if (checked) Color(0xFF4CAF50) else Color(0xFFFF4444)
+    val textColor = if (checked) Color(0xFF81C784) else Color(0xFFEF9A9A)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .width(72.dp)
+            .background(bgColor, RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .padding(horizontal = 4.dp, vertical = 6.dp)
+    ) {
+        // Label top
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        // Checkbox middle
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { onToggle() },
+            modifier = Modifier.size(28.dp),
+            colors = CheckboxDefaults.colors(
+                checkedColor = Color(0xFF4CAF50),
+                uncheckedColor = Color(0xFFFF4444)
             )
-            Text(label, color = Color.Gray, fontSize = 11.sp)
-        }
-        if (timestamp.isNotEmpty()) {
-            Text(timestamp, color = Color(0xFF888888), fontSize = 9.sp)
-        }
+        )
+        // Timestamp bottom
+        Text(
+            text = if (timestamp.isNotEmpty()) timestamp else "-",
+            fontSize = 8.sp,
+            color = Color(0xFF888888),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

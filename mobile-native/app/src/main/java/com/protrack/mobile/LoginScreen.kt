@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.protrack.mobile
 
 import androidx.compose.foundation.background
@@ -34,13 +35,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             modifier = Modifier.padding(24.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Title
             Text("ProTrack", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
             Text("Order Tracker", fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -53,15 +52,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     unfocusedBorderColor = Color.Gray
                 )
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password", color = Color.Gray) },
-                visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -69,13 +67,16 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     unfocusedBorderColor = Color.Gray
                 )
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Login button
+            if (errorMsg.isNotEmpty()) {
+                Text(errorMsg, color = Color.Red, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Button(
                 onClick = {
                     loading = true
-                    errorMsg = ""
                     auth.signInWithEmailAndPassword(email, password)
                         .addOnSuccessListener { onLoginSuccess() }
                         .addOnFailureListener { e ->
@@ -83,32 +84,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             loading = false
                         }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                enabled = !loading,
                 colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
-                enabled = !loading
+                shape = RoundedCornerShape(8.dp)
             ) {
                 if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text("Login", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-
-            // Error message
-            if (errorMsg.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(errorMsg, color = Color.Red, fontSize = 14.sp)
-            }
-
-            // Forgot password
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = {
-                if (email.isNotEmpty()) {
-                    auth.sendPasswordResetEmail(email)
-                    errorMsg = "Reset email sent!"
-                } else {
-                    errorMsg = "Enter your email first"
-                }
-            }) {
-                Text("Forgot Password?", color = Color.Gray)
+                else Text("Login", fontWeight = FontWeight.Bold)
             }
         }
     }

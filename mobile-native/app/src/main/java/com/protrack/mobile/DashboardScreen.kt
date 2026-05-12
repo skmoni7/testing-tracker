@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -145,26 +147,26 @@ fun DashboardScreen(
                 }
             }
 
-            // All 5 summary boxes in ONE horizontal row, each 1/5 width
+            // All 5 summary boxes in one row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                SummaryBox("Total",    "${"$"}${"%.2f".format(totalSum)}",    AccentBlue,           Modifier.weight(1f))
-                SummaryBox("Amt Cr",   "${"$"}${"%.2f".format(amtCrSum)}",    Color(0xFF00BCD4),    Modifier.weight(1f))
-                SummaryBox("Comm",     "${"$"}${"%.2f".format(commSum)}",     Color(0xFFFF8800),    Modifier.weight(1f))
-                SummaryBox("Received", "${"$"}${"%.2f".format(receivedSum)}", Color(0xFF4CAF50),    Modifier.weight(1f))
-                SummaryBox("Pending",  "${"$"}${"%.2f".format(pendingSum)}",  Color(0xFFFF4444),    Modifier.weight(1f))
+                SummaryBox("Total",    "${"$"}${"%.2f".format(totalSum)}",    AccentBlue,        Modifier.weight(1f))
+                SummaryBox("Amt Cr",   "${"$"}${"%.2f".format(amtCrSum)}",    Color(0xFF00BCD4), Modifier.weight(1f))
+                SummaryBox("Comm",     "${"$"}${"%.2f".format(commSum)}",     Color(0xFFFF8800), Modifier.weight(1f))
+                SummaryBox("Received", "${"$"}${"%.2f".format(receivedSum)}", Color(0xFF4CAF50), Modifier.weight(1f))
+                SummaryBox("Pending",  "${"$"}${"%.2f".format(pendingSum)}",  Color(0xFFFF4444), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+            LazyColumn(
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+            ) {
                 items(orders) { order ->
                     OrderCard(
                         order = order,
-                        amtCrInput = amtCrInputs[order.id] ?: order.amountCredited.toString(),
+                        amtCrInput = amtCrInputs[order.id] ?: "${"%.2f".format(order.amountCredited)}",
                         onAmtCrChange = { amtCrInputs = amtCrInputs + (order.id to it) },
                         onAmtCrSave = { value ->
                             db.collection("orders").document(order.id).update("amountCredited", value)
@@ -188,6 +190,15 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+
+            // Footer
+            Text(
+                text = "developed by skm",
+                fontSize = 9.sp,
+                color = Color(0xFF444444),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            )
         }
 
         FloatingActionButton(
@@ -243,7 +254,6 @@ fun OrderCard(
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
-        // Priority color bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -251,8 +261,6 @@ fun OrderCard(
                 .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
         )
         Column(modifier = Modifier.padding(12.dp)) {
-
-            // Top: product info + amounts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -272,13 +280,12 @@ fun OrderCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Bottom: compact checkboxes LEFT, Amt Cr small box RIGHT
+            // Checkboxes LEFT, Amt Cr box RIGHT
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Checkboxes left
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     CheckItemWithTimestamp(
                         label = "Delivery",
@@ -300,15 +307,14 @@ fun OrderCard(
                     )
                 }
 
-                // Compact Amt Cr box right — fixed size, centered text
+                // Amt Cr — using BasicTextField so content is always visible
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier
-                        .border(1.dp, Color(0xFF444444), RoundedCornerShape(8.dp))
-                        .width(80.dp)
-                        .height(56.dp)
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .border(1.dp, Color(0xFF555555), RoundedCornerShape(8.dp))
+                        .width(82.dp)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = "Amt Cr",
@@ -317,31 +323,24 @@ fun OrderCard(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(
+                    Spacer(modifier = Modifier.height(2.dp))
+                    BasicTextField(
                         value = amtCrInput,
                         onValueChange = onAmtCrChange,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedTextColor = amtCrColor,
-                            unfocusedTextColor = amtCrColor
-                        ),
+                        cursorBrush = SolidColor(amtCrColor),
                         textStyle = TextStyle(
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             color = amtCrColor
                         ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
-            // Action buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }

@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.protrack.mobile
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -22,17 +25,33 @@ val AccentBlue = Color(0xFF4f8ef7)
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
     val auth = FirebaseAuth.getInstance()
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("protrack_prefs", Context.MODE_PRIVATE)
+
+    var email by remember { mutableStateOf(prefs.getString("saved_email", "") ?: "") }
+    var password by remember { mutableStateOf(prefs.getString("saved_password", "") ?: "") }
+    var rememberMe by remember { mutableStateOf(prefs.getBoolean("remember_me", false)) }
     var errorMsg by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
 
+    // Auto-login if remember me was set and credentials saved
+    LaunchedEffect(Unit) {
+        if (rememberMe && email.isNotEmpty() && password.isNotEmpty()) {
+            loading = true
+            auth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener { onLoginSuccess() }
+                .addOnFailureListener { loading = false }
+        }
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize().background(DarkBg),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize().background(DarkBg)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(24.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("ProTrack", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -67,6 +86,20 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     unfocusedBorderColor = Color.Gray
                 )
             )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Remember me for 30 days checkbox
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = rememberMe,
+                    onCheckedChange = { rememberMe = it },
+                    colors = CheckboxDefaults.colors(checkedColor = AccentBlue)
+                )
+                Text("Remember me for 30 days", color = Color.Gray, fontSize = 13.sp)
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             if (errorMsg.isNotEmpty()) {
@@ -78,7 +111,23 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 onClick = {
                     loading = true
                     auth.signInWithEmailAndPassword(email, password)
-                        .addOnSuccessListener { onLoginSuccess() }
+                        .addOnSuccessListener {
+                            // Save credentials if remember me checked
+                            if (rememberMe) {
+                                prefs.edit()
+                                    .putString("saved_email", email)
+                                    .putString("saved_password", password)
+                                    .putBoolean("remember_me", true)
+                                    .apply()
+                            } else {
+                                prefs.edit()
+                                    .remove("saved_email")
+                                    .remove("saved_password")
+                                    .putBoolean("remember_me", false)
+                                    .apply()
+                            }
+                            onLoginSuccess()
+                        }
                         .addOnFailureListener { e ->
                             errorMsg = e.message ?: "Login failed"
                             loading = false
@@ -93,5 +142,17 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 else Text("Login", fontWeight = FontWeight.Bold)
             }
         }
+
+        // Footer
+        Text(
+            text = "developed by skm",
+            fontSize = 9.sp,
+            color = Color(0xFF444444),
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp)
+                .fillMaxWidth()
+        )
     }
 }

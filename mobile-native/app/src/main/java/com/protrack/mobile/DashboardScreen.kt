@@ -2,11 +2,13 @@
 package com.protrack.mobile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Timestamp
@@ -26,10 +29,10 @@ import java.util.*
 
 fun getPriorityOrder(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Int {
     return when {
-        !delivered -> 0                                        // A - highest priority (red)
-        delivered && !reviewWritten -> 1                      // B (orange)
-        delivered && reviewWritten && !paymentReceived -> 2   // C (yellow)
-        else -> 3                                             // Done (green)
+        !delivered -> 0
+        delivered && !reviewWritten -> 1
+        delivered && reviewWritten && !paymentReceived -> 2
+        else -> 3
     }
 }
 
@@ -112,7 +115,6 @@ fun DashboardScreen(
                             paymentReceivedAt = doc.getTimestamp("paymentReceivedAt")
                         )
                     }
-                    // Sort by priority: A (undelivered) first → B → C → Done last
                     orders = raw.sortedBy { o ->
                         getPriorityOrder(o.delivered, o.reviewWritten, o.paymentReceived)
                     }
@@ -129,7 +131,6 @@ fun DashboardScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBg)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp).padding(top = 32.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -141,7 +142,6 @@ fun DashboardScreen(
                 }
             }
 
-            // Summary row 1
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -150,8 +150,6 @@ fun DashboardScreen(
                 SummaryBox("Amt Cr", "${"$"}${"%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(6.dp))
-
-            // Summary row 2
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -242,6 +240,7 @@ fun OrderCard(
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(8.dp)
     ) {
+        // Priority color bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -249,7 +248,8 @@ fun OrderCard(
                 .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
         )
         Column(modifier = Modifier.padding(12.dp)) {
-            // Product name + amounts
+
+            // Top row: product info + amounts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -266,40 +266,62 @@ fun OrderCard(
                     Text(priorityLabel, color = priorityColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
 
-            // Amt Cr input
-            OutlinedTextField(
-                value = amtCrInput,
-                onValueChange = onAmtCrChange,
-                label = { Text("Amt Cr", color = Color.Gray) },
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Bottom row: checkboxes LEFT, Amt Cr box RIGHT
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Checkboxes — compact, left side
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CheckItemWithTimestamp(
+                        label = "Delivery",
+                        checked = order.delivered,
+                        timestamp = formatTimestamp(order.deliveredAt),
+                        onToggle = { onToggle("delivered", order.delivered) }
+                    )
+                    CheckItemWithTimestamp(
+                        label = "Receive",
+                        checked = order.reviewWritten,
+                        timestamp = formatTimestamp(order.reviewWrittenAt),
+                        onToggle = { onToggle("reviewWritten", order.reviewWritten) }
+                    )
+                    CheckItemWithTimestamp(
+                        label = "Pay",
+                        checked = order.paymentReceived,
+                        timestamp = formatTimestamp(order.paymentReceivedAt),
+                        onToggle = { onToggle("paymentReceived", order.paymentReceived) }
+                    )
+                }
 
-            // Checkboxes with full labels and timestamps below each
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                CheckItemWithTimestamp(
-                    label = "Delivery",
-                    checked = order.delivered,
-                    timestamp = formatTimestamp(order.deliveredAt),
-                    onToggle = { onToggle("delivered", order.delivered) }
-                )
-                CheckItemWithTimestamp(
-                    label = "Receive",
-                    checked = order.reviewWritten,
-                    timestamp = formatTimestamp(order.reviewWrittenAt),
-                    onToggle = { onToggle("reviewWritten", order.reviewWritten) }
-                )
-                CheckItemWithTimestamp(
-                    label = "Pay",
-                    checked = order.paymentReceived,
-                    timestamp = formatTimestamp(order.paymentReceivedAt),
-                    onToggle = { onToggle("paymentReceived", order.paymentReceived) }
-                )
+                // Amt Cr compact box — right side
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .border(1.dp, Color(0xFF444444), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .width(90.dp)
+                ) {
+                    Text("Amt Cr", fontSize = 10.sp, color = Color.Gray)
+                    BasicTextField(
+                        value = amtCrInput,
+                        onValueChange = onAmtCrChange,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = amtCrColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
+            // Action buttons row
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }
@@ -318,12 +340,13 @@ fun CheckItemWithTimestamp(label: String, checked: Boolean, timestamp: String, o
             Checkbox(
                 checked = checked,
                 onCheckedChange = { onToggle() },
+                modifier = Modifier.size(20.dp),
                 colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
             )
-            Text(label, color = Color.Gray, fontSize = 12.sp)
+            Text(label, color = Color.Gray, fontSize = 11.sp)
         }
         if (timestamp.isNotEmpty()) {
-            Text(timestamp, color = Color(0xFF888888), fontSize = 10.sp)
+            Text(timestamp, color = Color(0xFF888888), fontSize = 9.sp)
         }
     }
 }

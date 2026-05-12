@@ -184,21 +184,22 @@ fun OrderCard(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("$${"%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    OutlinedTextField(
-                        value = amtCrInput,
-                        onValueChange = onAmtCrChange,
-                        label = { Text("Amt Cr", fontSize = 9.sp) },
-                        modifier = Modifier.width(90.dp).height(56.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = amtCrColor,
-                            unfocusedTextColor = amtCrColor,
-                            focusedBorderColor = amtCrColor,
-                            unfocusedBorderColor = amtCrColor
-                        ),
-                        singleLine = true
+                    Text(
+                        text = "Cr: $${"%.2f".format(amtCrValue)}",
+                        color = amtCrColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                value = amtCrInput,
+                onValueChange = onAmtCrChange,
+                label = { Text("Amt Cr") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 CheckItem("Del", order.delivered) { onToggle("delivered", order.delivered) }

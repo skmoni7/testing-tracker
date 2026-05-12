@@ -1,9 +1,7 @@
 package com.protrack.mobile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,7 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -28,12 +25,12 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
     var orderNumber by remember { mutableStateOf("") }
     var marketplace by remember { mutableStateOf("Amazon") }
     var sellerName by remember { mutableStateOf("") }
-    var productAmount by remember { mutableStateOf("") }
+    var productAmount by remember { mutableStateOf("0") }
     var commissionAmount by remember { mutableStateOf("0") }
     var loading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
 
-    // Load existing order if editing
     LaunchedEffect(orderId) {
         if (!isNew) {
             db.collection("orders").document(orderId).get()
@@ -51,102 +48,89 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .padding(16.dp)
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
     ) {
         Text(
-            if (isNew) "Add Order" else "Edit Order",
-            fontSize = 24.sp,
+            text = if (isNew) "Add Order" else "Edit Order",
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color(0xFF6200EE),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.height(24.dp))
 
-        // Product Name
-        FormLabel("Product Name *")
+        if (errorMsg.isNotEmpty()) {
+            Text(text = errorMsg, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+        }
+
         OutlinedTextField(
             value = productName,
             onValueChange = { productName = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Product name", color = Color.Gray) },
-            colors = fieldColors()
+            label = { Text("Product Name") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // Order Number
-        FormLabel("Order Number")
         OutlinedTextField(
             value = orderNumber,
             onValueChange = { orderNumber = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Order #", color = Color.Gray) },
-            colors = fieldColors()
+            label = { Text("Order Number") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // Marketplace selector
-        FormLabel("Marketplace")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            MARKETPLACES.forEach { m ->
-                FilterChip(
-                    selected = marketplace == m,
-                    onClick = { marketplace = m },
-                    label = { Text(m, fontSize = 12.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = AccentBlue,
-                        selectedLabelColor = Color.White,
-                        labelColor = Color.Gray
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        ) {
+            OutlinedTextField(
+                value = marketplace,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Marketplace") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                MARKETPLACES.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            marketplace = option
+                            expanded = false
+                        }
                     )
-                )
+                }
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // Seller Name
-        FormLabel("Seller Name")
         OutlinedTextField(
             value = sellerName,
             onValueChange = { sellerName = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Seller name", color = Color.Gray) },
-            colors = fieldColors()
+            label = { Text("Seller Name") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // Product Amount
-        FormLabel("Product Amount ($)")
         OutlinedTextField(
             value = productAmount,
             onValueChange = { productAmount = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("0.00", color = Color.Gray) },
-            colors = fieldColors()
+            label = { Text("Product Amount") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // Commission Amount
-        FormLabel("Commission Amount ($)")
         OutlinedTextField(
             value = commissionAmount,
             onValueChange = { commissionAmount = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("0.00", color = Color.Gray) },
-            colors = fieldColors()
+            label = { Text("Commission Amount") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.height(32.dp))
 
-        // Error message
-        if (errorMsg.isNotEmpty()) {
-            Text(errorMsg, color = Color.Red, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Save button
         Button(
             onClick = {
-                if (productName.isEmpty()) { errorMsg = "Product name is required"; return@Button }
                 loading = true
+                val userId = auth.currentUser?.uid ?: ""
                 val data = hashMapOf(
                     "productName" to productName,
                     "orderNumber" to orderNumber,
@@ -154,55 +138,39 @@ fun AddEditScreen(orderId: String, onSaved: () -> Unit, onCancel: () -> Unit) {
                     "sellerName" to sellerName,
                     "productAmount" to (productAmount.toDoubleOrNull() ?: 0.0),
                     "commissionAmount" to (commissionAmount.toDoubleOrNull() ?: 0.0),
-                    "userId" to (auth.currentUser?.uid ?: "")
+                    "userId" to userId
                 )
-                if (isNew) {
-                    data["delivered"] = false
-                    data["reviewWritten"] = false
-                    data["paymentReceived"] = false
-                    data["amtCr"] = 0.0
-                    data["createdAt"] = Timestamp.now()
+                val task = if (isNew) {
                     db.collection("orders").add(data)
-                        .addOnSuccessListener { onSaved() }
-                        .addOnFailureListener { e -> errorMsg = e.message ?: "Error"; loading = false }
                 } else {
-                    db.collection("orders").document(orderId).update(data as Map<String, Any>)
-                        .addOnSuccessListener { onSaved() }
-                        .addOnFailureListener { e -> errorMsg = e.message ?: "Error"; loading = false }
+                    db.collection("orders").document(orderId).set(data).let { null }
+                    null
+                }
+                if (!isNew) {
+                    db.collection("orders").document(orderId).set(data)
+                        .addOnSuccessListener { loading = false; onSaved() }
+                        .addOnFailureListener { loading = false; errorMsg = it.message ?: "Error" }
+                } else {
+                    db.collection("orders").add(data)
+                        .addOnSuccessListener { loading = false; onSaved() }
+                        .addOnFailureListener { loading = false; errorMsg = it.message ?: "Error" }
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
-            enabled = !loading
+            enabled = !loading,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         ) {
-            if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-            else Text(if (isNew) "Add Order" else "Update Order", fontWeight = FontWeight.Bold)
+            if (loading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+            } else {
+                Text(if (isNew) "Add Order" else "Update Order", fontWeight = FontWeight.Bold)
+            }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Cancel button
         OutlinedButton(
             onClick = onCancel,
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(8.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Cancel", color = Color.Gray)
+            Text("Cancel")
         }
     }
 }
-
-@Composable
-fun FormLabel(text: String) {
-    Text(text, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
-}
-
-@Composable
-fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = Color.White,
-    unfocusedTextColor = Color.White,
-    focusedBorderColor = AccentBlue,
-    unfocusedBorderColor = Color(0xFF333333),
-    containerColor = DarkCard
-)

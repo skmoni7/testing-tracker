@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.protrack.mobile
 
 import androidx.compose.foundation.background
@@ -20,7 +21,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 
-// Priority color logic matching web app
 fun getPriorityColor(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Color {
     return when {
         !delivered && !reviewWritten && !paymentReceived -> Color(0xFFFF4444)
@@ -55,7 +55,6 @@ fun DashboardScreen(
     var orders by remember { mutableStateOf(listOf<Order>()) }
     var amtCrInputs by remember { mutableStateOf(mapOf<String, String>()) }
 
-    // Live Firestore listener
     DisposableEffect(Unit) {
         val listener = db.collection("orders")
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -86,7 +85,6 @@ fun DashboardScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(DarkBg)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp).padding(top = 32.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -96,17 +94,15 @@ fun DashboardScreen(
                 TextButton(onClick = onLogout) { Text("Logout", color = Color.Gray) }
             }
 
-            // Summary row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SummaryBox("Total", "$${".2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
-                SummaryBox("Amt Cr", "$${".2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
+                SummaryBox("Total", "$${"%.2f".format(totalSum)}", AccentBlue, Modifier.weight(1f))
+                SummaryBox("Amt Cr", "$${"%.2f".format(amtCrSum)}", Color(0xFF00BCD4), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Orders list
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
                 items(orders) { order ->
                     OrderCard(
@@ -127,7 +123,6 @@ fun DashboardScreen(
             }
         }
 
-        // FAB
         FloatingActionButton(
             onClick = onAddOrder,
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
@@ -178,7 +173,6 @@ fun OrderCard(
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Top row - name + total + amt cr
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -189,8 +183,7 @@ fun OrderCard(
                     Text("${order.marketplace} - ${order.sellerName}", color = Color.Gray, fontSize = 12.sp)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("$${".2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    // Inline Amt Cr input
+                    Text("$${"%.2f".format(total)}", color = priorityColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     OutlinedTextField(
                         value = amtCrInput,
                         onValueChange = onAmtCrChange,
@@ -206,17 +199,12 @@ fun OrderCard(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Checkboxes row
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 CheckItem("Del", order.delivered) { onToggle("delivered", order.delivered) }
                 CheckItem("Rev", order.reviewWritten) { onToggle("reviewWritten", order.reviewWritten) }
                 CheckItem("Pay", order.paymentReceived) { onToggle("paymentReceived", order.paymentReceived) }
             }
-
-            // Action buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) { Text("Edit", color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete", color = Color(0xFFFF4444)) }
@@ -231,8 +219,11 @@ fun OrderCard(
 @Composable
 fun CheckItem(label: String, checked: Boolean, onToggle: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = checked, onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50)))
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { onToggle() },
+            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
+        )
         Text(label, color = Color.Gray, fontSize = 12.sp)
     }
 }

@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: mobile
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Setup Expo + EAS
         uses: expo/expo-github-action@v8

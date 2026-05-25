@@ -1,5 +1,6 @@
 {
   "cli": {
+<<<<<<< Updated upstream
     "version": ">= 10.0.0",
     "appVersionSource": "local"
   },
@@ -14,5 +15,24 @@
         "buildType": "app-bundle"
       }
     }
+=======
+    "version": ">= 18.11.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+>>>>>>> Stashed changes
   }
 }

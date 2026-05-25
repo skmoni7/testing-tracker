@@ -1,5 +1,6 @@
 {
   "expo": {
+<<<<<<< Updated upstream
     "name": "ProTrack",
     "slug": "protrack-mobile",
     "version": "1.0.0",
@@ -14,13 +15,49 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.protrack.mobile"
+=======
+    "name": "mobile",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.skm.protrack",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.skm.protrack"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+>>>>>>> Stashed changes
     },
     "extra": {
       "eas": {
         "projectId": "98f52b8e-5f32-4cc4-b29a-43e9106a6306"
       }
+<<<<<<< Updated upstream
     },
     "owner": "shanukmoni",
     "platforms": ["ios", "android"]
+=======
+    }
+>>>>>>> Stashed changes
   }
 }

@@ -252,8 +252,8 @@ export default function DashboardPage() {
                 <th className="px-3 py-2 text-right">Total</th>
                 <th className="px-3 py-2 text-center">Amt Cr</th>
                 <th className="px-3 py-2 text-center">Delivery</th>
-                <th className="px-3 py-2 text-center">Receive</th>
-                <th className="px-3 py-2 text-center">Pay</th>
+                <th className="px-3 py-2 text-center">Review</th>
+                <th className="px-3 py-2 text-center">Payment</th>
                 <th className="px-3 py-2 text-center">Actions</th>
               </tr>
             </thead>
@@ -289,10 +289,10 @@ export default function DashboardPage() {
                       <StatusBox label="Delivery" checked={order.delivered} ts={order.deliveredAt} field="delivered" orderId={order.id} />
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <StatusBox label="Receive" checked={order.reviewWritten} ts={order.reviewWrittenAt} field="reviewWritten" orderId={order.id} />
+                      <StatusBox label="Review" checked={order.reviewWritten} ts={order.reviewWrittenAt} field="reviewWritten" orderId={order.id} />
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <StatusBox label="Pay" checked={order.paymentReceived} ts={order.paymentReceivedAt} field="paymentReceived" orderId={order.id} />
+                      <StatusBox label="Payment" checked={order.paymentReceived} ts={order.paymentReceivedAt} field="paymentReceived" orderId={order.id} />
                     </td>
                     <td className="px-3 py-2 text-center">
                       <div className="flex gap-3">
@@ -341,8 +341,8 @@ export default function DashboardPage() {
                   {/* Status boxes right column */}
                   <div className="flex flex-col items-center gap-2 pl-2 border-l border-gray-300 dark:border-gray-600 shrink-0">
                     <StatusBox label="Delivery" checked={order.delivered} ts={order.deliveredAt} field="delivered" orderId={order.id} />
-                    <StatusBox label="Receive" checked={order.reviewWritten} ts={order.reviewWrittenAt} field="reviewWritten" orderId={order.id} />
-                    <StatusBox label="Pay" checked={order.paymentReceived} ts={order.paymentReceivedAt} field="paymentReceived" orderId={order.id} />
+                    <StatusBox label="Review" checked={order.reviewWritten} ts={order.reviewWrittenAt} field="reviewWritten" orderId={order.id} />
+                    <StatusBox label="Payment" checked={order.paymentReceived} ts={order.paymentReceivedAt} field="paymentReceived" orderId={order.id} />
                   </div>
                 </div>
                 <div className="flex gap-3 mt-2">

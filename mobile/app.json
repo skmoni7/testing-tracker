@@ -1,63 +1,33 @@
 {
   "expo": {
-<<<<<<< Updated upstream
     "name": "ProTrack",
-    "slug": "protrack-mobile",
+    "slug": "protrack",
+    "owner": "shanukmoni",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#1a1a2e"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#1a1a2e"
-      },
-      "package": "com.protrack.mobile"
-=======
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.skm.protrack",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.skm.protrack"
+      "package": "com.shanukmoni.protrack"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
->>>>>>> Stashed changes
-    },
-    "extra": {
-      "eas": {
-        "projectId": "98f52b8e-5f32-4cc4-b29a-43e9106a6306"
-      }
-<<<<<<< Updated upstream
-    },
-    "owner": "shanukmoni",
-    "platforms": ["ios", "android"]
-=======
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
->>>>>>> Stashed changes
   }
 }

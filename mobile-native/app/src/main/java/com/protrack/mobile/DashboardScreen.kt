@@ -293,7 +293,7 @@ fun OrderCard(
                         onToggle = { onToggle("delivered", order.delivered) }
                     )
                     StatusCheckBox(
-                        label = "Receive",
+                        label = "Review",
                         checked = order.reviewWritten,
                         timestamp = formatTimestamp(order.reviewWrittenAt),
                         onToggle = { onToggle("reviewWritten", order.reviewWritten) }

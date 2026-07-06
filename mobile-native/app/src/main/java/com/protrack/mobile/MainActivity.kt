@@ -14,15 +14,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ProTrackTheme {
-                ProTrackApp()
+            // ── Theme toggle state (default: dark) ──────────────────────────
+            var isDarkTheme by remember { mutableStateOf(true) }
+
+            ProTrackTheme(isDarkTheme = isDarkTheme) {
+                ProTrackApp(
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = { isDarkTheme = !isDarkTheme }
+                )
             }
         }
     }
 }
 
 @Composable
-fun ProTrackApp() {
+fun ProTrackApp(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
+) {
     val navController = rememberNavController()
     val auth = FirebaseAuth.getInstance()
     var isLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
@@ -49,6 +58,8 @@ fun ProTrackApp() {
         }
         composable("dashboard") {
             DashboardScreen(
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme,
                 onAddOrder = { navController.navigate("addedit/new") },
                 onEditOrder = { orderId -> navController.navigate("addedit/$orderId") },
                 onLogout = {

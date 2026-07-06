@@ -14,12 +14,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // ── Theme toggle state (default: dark) ──────────────────────────
             var isDarkTheme by remember { mutableStateOf(true) }
-
             ProTrackTheme(isDarkTheme = isDarkTheme) {
                 ProTrackApp(
-                    isDarkTheme = isDarkTheme,
+                    isDarkTheme   = isDarkTheme,
                     onToggleTheme = { isDarkTheme = !isDarkTheme }
                 )
             }
@@ -36,17 +34,16 @@ fun ProTrackApp(
     val auth = FirebaseAuth.getInstance()
     var isLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
 
-    // Auth state listener
     DisposableEffect(Unit) {
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            isLoggedIn = firebaseAuth.currentUser != null
+        val listener = FirebaseAuth.AuthStateListener { fa ->
+            isLoggedIn = fa.currentUser != null
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
     }
 
     NavHost(
-        navController = navController,
+        navController    = navController,
         startDestination = if (isLoggedIn) "dashboard" else "login"
     ) {
         composable("login") {
@@ -58,11 +55,11 @@ fun ProTrackApp(
         }
         composable("dashboard") {
             DashboardScreen(
-                isDarkTheme = isDarkTheme,
+                isDarkTheme   = isDarkTheme,
                 onToggleTheme = onToggleTheme,
-                onAddOrder = { navController.navigate("addedit/new") },
-                onEditOrder = { orderId -> navController.navigate("addedit/$orderId") },
-                onLogout = {
+                onAddOrder    = { navController.navigate("addedit/new") },
+                onEditOrder   = { id -> navController.navigate("addedit/$id") },
+                onLogout      = {
                     auth.signOut()
                     navController.navigate("login") {
                         popUpTo("dashboard") { inclusive = true }
@@ -70,11 +67,11 @@ fun ProTrackApp(
                 }
             )
         }
-        composable("addedit/{orderId}") { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: "new"
+        composable("addedit/{orderId}") { back ->
+            val orderId = back.arguments?.getString("orderId") ?: "new"
             AddEditScreen(
-                orderId = orderId,
-                onSaved = { navController.popBackStack() },
+                orderId  = orderId,
+                onSaved  = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() }
             )
         }

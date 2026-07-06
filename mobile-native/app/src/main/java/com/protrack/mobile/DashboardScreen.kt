@@ -34,7 +34,6 @@ import com.protrack.mobile.ui.theme.AccentBlue
 import java.text.SimpleDateFormat
 import java.util.*
 
-// ── Priority helpers ──────────────────────────────────────────────────────────
 fun getPriorityOrder(delivered: Boolean, reviewWritten: Boolean, paymentReceived: Boolean): Int {
     return when {
         !delivered -> 0
@@ -68,7 +67,6 @@ fun formatTimestamp(ts: Timestamp?): String {
     return sdf.format(ts.toDate())
 }
 
-// ── Data class ────────────────────────────────────────────────────────────────
 data class Order(
     val id: String = "",
     val productName: String = "",
@@ -88,7 +86,6 @@ data class Order(
     val paymentReceivedAt: Timestamp? = null
 )
 
-// ── Dashboard Screen ──────────────────────────────────────────────────────────
 @Composable
 fun DashboardScreen(
     isDarkTheme: Boolean,
@@ -99,16 +96,14 @@ fun DashboardScreen(
 ) {
     val db   = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
-    var orders by remember { mutableStateOf(listOf<Order>()) }
+    var orders      by remember { mutableStateOf(listOf<Order>()) }
     var amtCrInputs by remember { mutableStateOf(mapOf<String, String>()) }
 
-    // ── Theme-aware colors ────────────────────────────────────────────────────
     val bgColor      = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
     val textPrimary  = MaterialTheme.colorScheme.onBackground
     val textMuted    = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // ── Firestore listener ────────────────────────────────────────────────────
     DisposableEffect(Unit) {
         val listener = db.collection("orders")
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -116,22 +111,22 @@ fun DashboardScreen(
                 snap?.let {
                     val raw = it.documents.map { doc ->
                         Order(
-                            id               = doc.id,
-                            productName      = doc.getString("productName")      ?: "",
-                            sellerName       = doc.getString("sellerName")       ?: "",
-                            marketplace      = doc.getString("marketplace")      ?: "",
-                            orderNumber      = doc.getString("orderNumber")      ?: "",
-                            price            = doc.getDouble("price")            ?: 0.0,
-                            commissionAmount = doc.getDouble("commissionAmount") ?: 0.0,
-                            amountCredited   = doc.getDouble("amountCredited")   ?: 0.0,
-                            paypalAccount    = doc.getString("paypalAccount")    ?: "Shanu PP",
-                            reviewType       = doc.getString("reviewType")       ?: "text",
-                            delivered        = doc.getBoolean("delivered")       ?: false,
-                            reviewWritten    = doc.getBoolean("reviewWritten")   ?: false,
-                            paymentReceived  = doc.getBoolean("paymentReceived") ?: false,
-                            deliveredAt      = doc.getTimestamp("deliveredAt"),
-                            reviewWrittenAt  = doc.getTimestamp("reviewWrittenAt"),
-                            paymentReceivedAt= doc.getTimestamp("paymentReceivedAt")
+                            id                = doc.id,
+                            productName       = doc.getString("productName")       ?: "",
+                            sellerName        = doc.getString("sellerName")        ?: "",
+                            marketplace       = doc.getString("marketplace")       ?: "",
+                            orderNumber       = doc.getString("orderNumber")       ?: "",
+                            price             = doc.getDouble("price")             ?: 0.0,
+                            commissionAmount  = doc.getDouble("commissionAmount")  ?: 0.0,
+                            amountCredited    = doc.getDouble("amountCredited")    ?: 0.0,
+                            paypalAccount     = doc.getString("paypalAccount")     ?: "Shanu PP",
+                            reviewType        = doc.getString("reviewType")        ?: "text",
+                            delivered         = doc.getBoolean("delivered")        ?: false,
+                            reviewWritten     = doc.getBoolean("reviewWritten")    ?: false,
+                            paymentReceived   = doc.getBoolean("paymentReceived")  ?: false,
+                            deliveredAt       = doc.getTimestamp("deliveredAt"),
+                            reviewWrittenAt   = doc.getTimestamp("reviewWrittenAt"),
+                            paymentReceivedAt = doc.getTimestamp("paymentReceivedAt")
                         )
                     }
                     orders = raw.sortedBy { o ->
@@ -150,25 +145,18 @@ fun DashboardScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // ── Top bar ───────────────────────────────────────────────────────
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 32.dp, bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 32.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically
             ) {
                 Text("ProTrack", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = textPrimary)
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // ── Dark / Light toggle icon ──────────────────────────────
                     IconButton(onClick = onToggleTheme) {
                         Icon(
-                            imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode",
-                            tint = textMuted
+                            imageVector        = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (isDarkTheme) "Light mode" else "Dark mode",
+                            tint               = textMuted
                         )
                     }
                     TextButton(onClick = { auth.signOut(); onLogout() }) {
@@ -177,7 +165,6 @@ fun DashboardScreen(
                 }
             }
 
-            // ── Summary bar ───────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -190,29 +177,22 @@ fun DashboardScreen(
             }
             Spacer(Modifier.height(8.dp))
 
-            // ── Order list ────────────────────────────────────────────────────
             LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 items(orders) { order ->
                     OrderCard(
-                        order       = order,
-                        surfaceColor = surfaceColor,
-                        textPrimary = textPrimary,
-                        textMuted   = textMuted,
-                        amtCrInput  = amtCrInputs[order.id] ?: "%.2f".format(order.amountCredited),
+                        order         = order,
+                        surfaceColor  = surfaceColor,
+                        textPrimary   = textPrimary,
+                        textMuted     = textMuted,
+                        amtCrInput    = amtCrInputs[order.id] ?: "%.2f".format(order.amountCredited),
                         onAmtCrChange = { amtCrInputs = amtCrInputs + (order.id to it) },
-                        onAmtCrSave   = { value ->
-                            db.collection("orders").document(order.id).update("amountCredited", value)
-                        },
-                        onToggle = { field, current ->
+                        onAmtCrSave   = { v -> db.collection("orders").document(order.id).update("amountCredited", v) },
+                        onToggle      = { field, current ->
                             val updates = mutableMapOf<String, Any>(field to !current)
-                            val tsField = when (field) {
-                                "delivered"      -> "deliveredAt"
-                                "reviewWritten"  -> "reviewWrittenAt"
-                                "paymentReceived"-> "paymentReceivedAt"
-                                else             -> null
-                            }
-                            if (tsField != null) {
-                                updates[tsField] = if (!current) Timestamp.now() else Timestamp(0, 0)
+                            when (field) {
+                                "delivered"       -> updates["deliveredAt"]       = if (!current) Timestamp.now() else Timestamp(0,0)
+                                "reviewWritten"   -> updates["reviewWrittenAt"]   = if (!current) Timestamp.now() else Timestamp(0,0)
+                                "paymentReceived" -> updates["paymentReceivedAt"] = if (!current) Timestamp.now() else Timestamp(0,0)
                             }
                             db.collection("orders").document(order.id).update(updates)
                         },
@@ -223,7 +203,6 @@ fun DashboardScreen(
                 }
             }
 
-            // ── Footer ────────────────────────────────────────────────────────
             Text(
                 text      = "developed by skm",
                 fontSize  = 9.sp,
@@ -233,7 +212,6 @@ fun DashboardScreen(
             )
         }
 
-        // ── FAB ───────────────────────────────────────────────────────────────
         FloatingActionButton(
             onClick        = onAddOrder,
             modifier       = Modifier.align(Alignment.BottomEnd).padding(24.dp),
@@ -245,78 +223,35 @@ fun DashboardScreen(
     }
 }
 
-// ── Summary box ───────────────────────────────────────────────────────────────
 @Composable
-fun SummaryBox(
-    label: String,
-    value: String,
-    valueColor: Color,
-    cardColor: Color,
-    labelColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors   = CardDefaults.cardColors(containerColor = cardColor),
-        shape    = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            modifier            = Modifier.padding(6.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+fun SummaryBox(label: String, value: String, valueColor: Color, cardColor: Color, labelColor: Color, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = cardColor), shape = RoundedCornerShape(8.dp)) {
+        Column(modifier = Modifier.padding(6.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(label, fontSize = 9.sp,  color = labelColor, textAlign = TextAlign.Center)
             Text(value, fontSize = 11.sp, color = valueColor, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
     }
 }
 
-// ── Order card ────────────────────────────────────────────────────────────────
 @Composable
 fun OrderCard(
-    order: Order,
-    surfaceColor: Color,
-    textPrimary: Color,
-    textMuted: Color,
-    amtCrInput: String,
-    onAmtCrChange: (String) -> Unit,
-    onAmtCrSave: (Double) -> Unit,
-    onToggle: (String, Boolean) -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    order: Order, surfaceColor: Color, textPrimary: Color, textMuted: Color,
+    amtCrInput: String, onAmtCrChange: (String) -> Unit, onAmtCrSave: (Double) -> Unit,
+    onToggle: (String, Boolean) -> Unit, onEdit: () -> Unit, onDelete: () -> Unit
 ) {
-    val total          = order.price + order.commissionAmount
-    val priorityColor  = getPriorityColor(order.delivered, order.reviewWritten, order.paymentReceived)
-    val priorityLabel  = getPriorityLabel(order.delivered, order.reviewWritten, order.paymentReceived)
-    val amtCrValue     = amtCrInput.toDoubleOrNull() ?: 0.0
-    val amtCrColor     = when {
-        amtCrValue <= 0          -> Color.Gray
-        amtCrValue >= total      -> Color(0xFF4CAF50)
-        else                     -> Color(0xFFFF4444)
-    }
-    val borderColor = MaterialTheme.colorScheme.outline
+    val total         = order.price + order.commissionAmount
+    val priorityColor = getPriorityColor(order.delivered, order.reviewWritten, order.paymentReceived)
+    val priorityLabel = getPriorityLabel(order.delivered, order.reviewWritten, order.paymentReceived)
+    val amtCrValue    = amtCrInput.toDoubleOrNull() ?: 0.0
+    val amtCrColor    = when { amtCrValue <= 0 -> Color.Gray; amtCrValue >= total -> Color(0xFF4CAF50); else -> Color(0xFFFF4444) }
+    val borderColor   = MaterialTheme.colorScheme.outline
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors   = CardDefaults.cardColors(containerColor = surfaceColor),
-        shape    = RoundedCornerShape(8.dp)
-    ) {
-        // Priority color bar at top
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-        )
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = surfaceColor), shape = RoundedCornerShape(8.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(priorityColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
         Column(modifier = Modifier.padding(12.dp)) {
-
-            // Product info row
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Top
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(order.productName, color = textPrimary,  fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(order.productName, color = textPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Text("${order.marketplace} · ${order.sellerName}", color = textMuted, fontSize = 12.sp)
                     Text(order.paypalAccount, color = textMuted, fontSize = 11.sp)
                 }
@@ -326,93 +261,49 @@ fun OrderCard(
                     Text(priorityLabel, color = priorityColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-
             Spacer(Modifier.height(10.dp))
-
-            // Status boxes + Amt Cr box
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     StatusCheckBox("Delivery", order.delivered,       formatTimestamp(order.deliveredAt))       { onToggle("delivered",       order.delivered) }
                     StatusCheckBox("Review",   order.reviewWritten,   formatTimestamp(order.reviewWrittenAt))   { onToggle("reviewWritten",   order.reviewWritten) }
                     StatusCheckBox("Pay",      order.paymentReceived, formatTimestamp(order.paymentReceivedAt)) { onToggle("paymentReceived", order.paymentReceived) }
                 }
-
-                // Amt Cr input box
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-                        .width(82.dp)
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                    modifier = Modifier.border(1.dp, borderColor, RoundedCornerShape(8.dp)).width(82.dp).padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
                     Text("Amt Cr", fontSize = 9.sp, color = textMuted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(2.dp))
                     BasicTextField(
-                        value           = amtCrInput,
-                        onValueChange   = onAmtCrChange,
+                        value = amtCrInput, onValueChange = onAmtCrChange,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine      = true,
-                        cursorBrush     = SolidColor(amtCrColor),
-                        textStyle       = TextStyle(
-                            fontSize   = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign  = TextAlign.Center,
-                            color      = amtCrColor
-                        ),
+                        singleLine = true, cursorBrush = SolidColor(amtCrColor),
+                        textStyle = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = amtCrColor),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-
-            // Action buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit)   { Text("Edit",    color = AccentBlue) }
                 TextButton(onClick = onDelete) { Text("Delete",  color = Color(0xFFFF4444)) }
-                TextButton(onClick = { onAmtCrSave(amtCrInput.toDoubleOrNull() ?: 0.0) }) {
-                    Text("Save Cr", color = Color(0xFF00BCD4))
-                }
+                TextButton(onClick = { onAmtCrSave(amtCrInput.toDoubleOrNull() ?: 0.0) }) { Text("Save Cr", color = Color(0xFF00BCD4)) }
             }
         }
     }
 }
 
-// ── Status checkbox box ───────────────────────────────────────────────────────
 @Composable
 fun StatusCheckBox(label: String, checked: Boolean, timestamp: String, onToggle: () -> Unit) {
-    val bgColor     = if (checked) Color(0x2200C853) else Color(0x22FF4444)
-    val borderColor = if (checked) Color(0xFF4CAF50) else Color(0xFFFF4444)
-    val textColor   = if (checked) Color(0xFF81C784) else Color(0xFFEF9A9A)
-
+    val bg     = if (checked) Color(0x2200C853) else Color(0x22FF4444)
+    val border = if (checked) Color(0xFF4CAF50) else Color(0xFFFF4444)
+    val tc     = if (checked) Color(0xFF81C784) else Color(0xFFEF9A9A)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .width(72.dp)
-            .background(bgColor, RoundedCornerShape(8.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-            .padding(horizontal = 4.dp, vertical = 6.dp)
+        modifier = Modifier.width(72.dp).background(bg, RoundedCornerShape(8.dp)).border(1.dp, border, RoundedCornerShape(8.dp)).padding(horizontal = 4.dp, vertical = 6.dp)
     ) {
-        Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Checkbox(
-            checked         = checked,
-            onCheckedChange = { onToggle() },
-            modifier        = Modifier.size(28.dp),
-            colors          = CheckboxDefaults.colors(
-                checkedColor   = Color(0xFF4CAF50),
-                uncheckedColor = Color(0xFFFF4444)
-            )
-        )
-        Text(
-            text     = if (timestamp.isNotEmpty()) timestamp else "-",
-            fontSize = 8.sp,
-            color    = Color(0xFF888888),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = tc, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Checkbox(checked = checked, onCheckedChange = { onToggle() }, modifier = Modifier.size(28.dp),
+            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50), uncheckedColor = Color(0xFFFF4444)))
+        Text(if (timestamp.isNotEmpty()) timestamp else "-", fontSize = 8.sp, color = Color(0xFF888888), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }

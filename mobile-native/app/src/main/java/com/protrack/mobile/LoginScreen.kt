@@ -19,9 +19,6 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.protrack.mobile.ui.theme.AccentBlue
 
-// ── NOTE: DarkBg, DarkCard, AccentBlue are defined in ui/theme/Theme.kt ──────
-// Do NOT redeclare them here — that caused duplicate-symbol compile errors.
-
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
     val auth    = FirebaseAuth.getInstance()
@@ -34,12 +31,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     var errorMsg   by remember { mutableStateOf("") }
     var loading    by remember { mutableStateOf(false) }
 
-    // ── Theme-aware colors ───────────────────────────────────────────────────
-    val bgColor   = MaterialTheme.colorScheme.background
-    val textColor = MaterialTheme.colorScheme.onBackground
+    val bgColor    = MaterialTheme.colorScheme.background
+    val textColor  = MaterialTheme.colorScheme.onBackground
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val outline    = MaterialTheme.colorScheme.outline
 
-    // ── Auto-login if remember me was set ────────────────────────────────────
     LaunchedEffect(Unit) {
         if (rememberMe && email.isNotEmpty() && password.isNotEmpty()) {
             loading = true
@@ -51,13 +47,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
     Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
         Column(
-            modifier            = Modifier
-                .align(Alignment.Center)
-                .padding(24.dp)
-                .fillMaxWidth(),
+            modifier            = Modifier.align(Alignment.Center).padding(24.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("ProTrack",    fontSize = 36.sp, fontWeight = FontWeight.Bold, color = textColor)
+            Text("ProTrack",     fontSize = 36.sp, fontWeight = FontWeight.Bold, color = textColor)
             Spacer(Modifier.height(8.dp))
             Text("Order Tracker", fontSize = 14.sp, color = mutedColor)
             Spacer(Modifier.height(40.dp))
@@ -68,34 +61,30 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 label         = { Text("Email", color = mutedColor) },
                 modifier      = Modifier.fillMaxWidth(),
                 colors        = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor      = textColor,
-                    unfocusedTextColor    = textColor,
-                    focusedBorderColor    = AccentBlue,
-                    unfocusedBorderColor  = MaterialTheme.colorScheme.outline
+                    focusedTextColor     = textColor,
+                    unfocusedTextColor   = textColor,
+                    focusedBorderColor   = AccentBlue,
+                    unfocusedBorderColor = outline
                 )
             )
             Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value                  = password,
-                onValueChange          = { password = it },
-                label                  = { Text("Password", color = mutedColor) },
-                modifier               = Modifier.fillMaxWidth(),
-                visualTransformation   = PasswordVisualTransformation(),
-                colors                 = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor      = textColor,
-                    unfocusedTextColor    = textColor,
-                    focusedBorderColor    = AccentBlue,
-                    unfocusedBorderColor  = MaterialTheme.colorScheme.outline
+                value                = password,
+                onValueChange        = { password = it },
+                label                = { Text("Password", color = mutedColor) },
+                modifier             = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                colors               = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor     = textColor,
+                    unfocusedTextColor   = textColor,
+                    focusedBorderColor   = AccentBlue,
+                    unfocusedBorderColor = outline
                 )
             )
             Spacer(Modifier.height(12.dp))
 
-            // Remember me checkbox
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier          = Modifier.fillMaxWidth()
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Checkbox(
                     checked         = rememberMe,
                     onCheckedChange = { rememberMe = it },
@@ -111,7 +100,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             }
 
             Button(
-                onClick = {
+                onClick  = {
                     loading = true
                     auth.signInWithEmailAndPassword(email, password)
                         .addOnSuccessListener {
@@ -119,44 +108,32 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 prefs.edit()
                                     .putString("saved_email",    email)
                                     .putString("saved_password", password)
-                                    .putBoolean("remember_me",   true)
-                                    .apply()
+                                    .putBoolean("remember_me",   true).apply()
                             } else {
                                 prefs.edit()
-                                    .remove("saved_email")
-                                    .remove("saved_password")
-                                    .putBoolean("remember_me", false)
-                                    .apply()
+                                    .remove("saved_email").remove("saved_password")
+                                    .putBoolean("remember_me", false).apply()
                             }
                             onLoginSuccess()
                         }
-                        .addOnFailureListener { e ->
-                            errorMsg = e.message ?: "Login failed"
-                            loading  = false
-                        }
+                        .addOnFailureListener { e -> errorMsg = e.message ?: "Login failed"; loading = false }
                 },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 enabled  = !loading,
                 colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                 shape    = RoundedCornerShape(8.dp)
             ) {
-                if (loading)
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else
-                    Text("Login", fontWeight = FontWeight.Bold)
+                if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                else Text("Login", fontWeight = FontWeight.Bold)
             }
         }
 
-        // Footer
         Text(
             text      = "developed by skm",
             fontSize  = 9.sp,
             color     = mutedColor,
             textAlign = TextAlign.Center,
-            modifier  = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-                .fillMaxWidth()
+            modifier  = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp).fillMaxWidth()
         )
     }
 }

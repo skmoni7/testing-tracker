@@ -17,24 +17,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.protrack.mobile.ui.theme.AccentBlue
 
-val DarkBg = Color(0xFF1a1a2e)
-val DarkCard = Color(0xFF16213e)
-val AccentBlue = Color(0xFF4f8ef7)
+// ── NOTE: DarkBg, DarkCard, AccentBlue are defined in ui/theme/Theme.kt ──────
+// Do NOT redeclare them here — that caused duplicate-symbol compile errors.
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
-    val auth = FirebaseAuth.getInstance()
+    val auth    = FirebaseAuth.getInstance()
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("protrack_prefs", Context.MODE_PRIVATE)
+    val prefs   = context.getSharedPreferences("protrack_prefs", Context.MODE_PRIVATE)
 
-    var email by remember { mutableStateOf(prefs.getString("saved_email", "") ?: "") }
-    var password by remember { mutableStateOf(prefs.getString("saved_password", "") ?: "") }
+    var email      by remember { mutableStateOf(prefs.getString("saved_email",    "") ?: "") }
+    var password   by remember { mutableStateOf(prefs.getString("saved_password", "") ?: "") }
     var rememberMe by remember { mutableStateOf(prefs.getBoolean("remember_me", false)) }
-    var errorMsg by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
+    var errorMsg   by remember { mutableStateOf("") }
+    var loading    by remember { mutableStateOf(false) }
 
-    // Auto-login if remember me was set and credentials saved
+    // ── Theme-aware colors ───────────────────────────────────────────────────
+    val bgColor   = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // ── Auto-login if remember me was set ────────────────────────────────────
     LaunchedEffect(Unit) {
         if (rememberMe && email.isNotEmpty() && password.isNotEmpty()) {
             loading = true
@@ -44,67 +49,65 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize().background(DarkBg)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
         Column(
-            modifier = Modifier
+            modifier            = Modifier
                 .align(Alignment.Center)
                 .padding(24.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("ProTrack", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Order Tracker", fontSize = 14.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(40.dp))
+            Text("ProTrack",    fontSize = 36.sp, fontWeight = FontWeight.Bold, color = textColor)
+            Spacer(Modifier.height(8.dp))
+            Text("Order Tracker", fontSize = 14.sp, color = mutedColor)
+            Spacer(Modifier.height(40.dp))
 
             OutlinedTextField(
-                value = email,
+                value         = email,
                 onValueChange = { email = it },
-                label = { Text("Email", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = AccentBlue,
-                    unfocusedBorderColor = Color.Gray
+                label         = { Text("Email", color = mutedColor) },
+                modifier      = Modifier.fillMaxWidth(),
+                colors        = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor      = textColor,
+                    unfocusedTextColor    = textColor,
+                    focusedBorderColor    = AccentBlue,
+                    unfocusedBorderColor  = MaterialTheme.colorScheme.outline
                 )
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = AccentBlue,
-                    unfocusedBorderColor = Color.Gray
+                value                  = password,
+                onValueChange          = { password = it },
+                label                  = { Text("Password", color = mutedColor) },
+                modifier               = Modifier.fillMaxWidth(),
+                visualTransformation   = PasswordVisualTransformation(),
+                colors                 = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor      = textColor,
+                    unfocusedTextColor    = textColor,
+                    focusedBorderColor    = AccentBlue,
+                    unfocusedBorderColor  = MaterialTheme.colorScheme.outline
                 )
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Remember me for 30 days checkbox
+            // Remember me checkbox
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier          = Modifier.fillMaxWidth()
             ) {
                 Checkbox(
-                    checked = rememberMe,
+                    checked         = rememberMe,
                     onCheckedChange = { rememberMe = it },
-                    colors = CheckboxDefaults.colors(checkedColor = AccentBlue)
+                    colors          = CheckboxDefaults.colors(checkedColor = AccentBlue)
                 )
-                Text("Remember me for 30 days", color = Color.Gray, fontSize = 13.sp)
+                Text("Remember me for 30 days", color = mutedColor, fontSize = 13.sp)
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             if (errorMsg.isNotEmpty()) {
-                Text(errorMsg, color = Color.Red, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(errorMsg, color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
+                Spacer(Modifier.height(8.dp))
             }
 
             Button(
@@ -112,12 +115,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     loading = true
                     auth.signInWithEmailAndPassword(email, password)
                         .addOnSuccessListener {
-                            // Save credentials if remember me checked
                             if (rememberMe) {
                                 prefs.edit()
-                                    .putString("saved_email", email)
+                                    .putString("saved_email",    email)
                                     .putString("saved_password", password)
-                                    .putBoolean("remember_me", true)
+                                    .putBoolean("remember_me",   true)
                                     .apply()
                             } else {
                                 prefs.edit()
@@ -130,26 +132,28 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         }
                         .addOnFailureListener { e ->
                             errorMsg = e.message ?: "Login failed"
-                            loading = false
+                            loading  = false
                         }
                 },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                enabled = !loading,
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
-                shape = RoundedCornerShape(8.dp)
+                enabled  = !loading,
+                colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                shape    = RoundedCornerShape(8.dp)
             ) {
-                if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text("Login", fontWeight = FontWeight.Bold)
+                if (loading)
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                else
+                    Text("Login", fontWeight = FontWeight.Bold)
             }
         }
 
         // Footer
         Text(
-            text = "developed by skm",
-            fontSize = 9.sp,
-            color = Color(0xFF444444),
+            text      = "developed by skm",
+            fontSize  = 9.sp,
+            color     = mutedColor,
             textAlign = TextAlign.Center,
-            modifier = Modifier
+            modifier  = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp)
                 .fillMaxWidth()
